@@ -1,0 +1,2976 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "CaseSummary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "line": {
+          "type": "number"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "draft": {
+          "type": "boolean",
+          "description": "`tags` contains `@draft`: skipped by `intent-test run` unless AT_INCLUDE_DRAFTS=true (a draft without steps always). Only a draft may have no steps yet; only a draft can be discarded."
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The `refs:` line, e.g. TestRail case ids."
+        },
+        "session": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string",
+          "description": "For a case of a parameterized template: the template's explicit id."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "file",
+        "line",
+        "tags",
+        "draft",
+        "refs"
+      ],
+      "additionalProperties": false,
+      "description": "One case of the app as the case list shows it. `id` is the explicit id (`<id>` or `<id>[<row key>]` for a template row)."
+    },
+    "DevelopStep": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "number"
+        },
+        "number": {
+          "type": "number"
+        },
+        "label": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "line": {
+          "type": "number"
+        },
+        "expanded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "text",
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          "description": "For a `use` step: the inlined steps it expands to."
+        }
+      },
+      "required": [
+        "index",
+        "number",
+        "label",
+        "text",
+        "kind",
+        "line"
+      ],
+      "additionalProperties": false,
+      "description": "One of the case's own steps, as written in its section (0-based `index`; `number` and `label` as the parser numbers them)."
+    },
+    "SeedInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "A seed of the app's `seeds.ts`, as `cases` lists them for the Seed choosers."
+    },
+    "DevelopCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DevelopStep"
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The parameter row of a template case."
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "line": {
+          "type": "number"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "draft": {
+          "type": "boolean",
+          "description": "`tags` contains `@draft`: skipped by `intent-test run` unless AT_INCLUDE_DRAFTS=true (a draft without steps always). Only a draft may have no steps yet; only a draft can be discarded."
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The `refs:` line, e.g. TestRail case ids."
+        },
+        "session": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string",
+          "description": "For a case of a parameterized template: the template's explicit id."
+        }
+      },
+      "required": [
+        "draft",
+        "file",
+        "id",
+        "line",
+        "name",
+        "refs",
+        "steps",
+        "tags"
+      ]
+    },
+    "DevelopBlock": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "line": {
+          "type": "number",
+          "description": "1-based line of its heading."
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DevelopStep"
+          }
+        },
+        "usedBy": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "caseId": {
+                "type": "string"
+              },
+              "as": {
+                "type": "string",
+                "enum": [
+                  "session",
+                  "use",
+                  "switch"
+                ]
+              }
+            },
+            "required": [
+              "caseId",
+              "as"
+            ],
+            "additionalProperties": false
+          },
+          "description": "The cases that start from it (`session:`), inline it (`use`) or continue as it (`switch to session`), in file order."
+        }
+      },
+      "required": [
+        "name",
+        "file",
+        "line",
+        "steps",
+        "usedBy"
+      ],
+      "additionalProperties": false,
+      "description": "A `## Steps:` block loaded in the rail (`load_block`): its own steps as written (a `use` step with its expansion, as for a case) and the cases that use it. While it is loaded, the step requests act on it instead of a case."
+    },
+    "BlockUpdate": {
+      "type": "object",
+      "properties": {
+        "block": {
+          "$ref": "#/definitions/DevelopBlock"
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "saved": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string",
+          "description": "The parser's message when the saved file does not parse, or why it could not be saved."
+        }
+      },
+      "required": [
+        "block",
+        "file",
+        "saved"
+      ],
+      "additionalProperties": false,
+      "description": "The reply to an edit while a block is loaded, also the `block.updated` payload."
+    },
+    "DevelopStepRecord": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "passed",
+            "failed"
+          ]
+        },
+        "durationMs": {
+          "type": "number"
+        },
+        "modelMs": {
+          "type": "number"
+        },
+        "chosen": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "confidence": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "description",
+            "confidence"
+          ],
+          "additionalProperties": false
+        },
+        "top": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "p": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "description",
+              "p"
+            ],
+            "additionalProperties": false
+          },
+          "description": "The model's ranked answers, best first."
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "description"
+            ],
+            "additionalProperties": false
+          },
+          "description": "The elements the resolver offered as answer options."
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "failure": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "detail": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "summary"
+          ],
+          "additionalProperties": false
+        },
+        "screenshot": {
+          "type": "string",
+          "description": "Base64 JPEG taken before the action, as in reports."
+        },
+        "screenshotFallback": {
+          "type": "boolean"
+        },
+        "condition": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string",
+          "description": "Base64 JPEG of the viewport after the step (at most 640 px wide); absent when the capture failed."
+        },
+        "page": {
+          "$ref": "#/definitions/PageActivity",
+          "description": "What the page reported while the step ran (docs/develop-mode.md, section 3.6)."
+        }
+      },
+      "required": [
+        "index",
+        "status",
+        "durationMs",
+        "modelMs"
+      ],
+      "additionalProperties": false,
+      "description": "What running or verifying one step produced; derived from `StepRecord` in `src/steps.ts`."
+    },
+    "PageActivity": {
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "console": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "string",
+                "enum": [
+                  "error",
+                  "warning"
+                ]
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "level",
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "requests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "method": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "status": {
+                "type": "number"
+              },
+              "failure": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "method",
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "errors",
+        "console",
+        "requests"
+      ],
+      "additionalProperties": false,
+      "description": "The page's own errors during one step: uncaught exceptions, console errors and warnings, and requests that answered 400 or above or failed. At most 20 entries per list, texts cut to 300 characters, URLs without query or fragment."
+    },
+    "Verification": {
+      "type": "object",
+      "properties": {
+        "chosen": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "confidence": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "description",
+            "confidence"
+          ],
+          "additionalProperties": false
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "top": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "p": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "description",
+              "p"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why nothing was chosen (the model answered none, or was unsure)."
+        }
+      },
+      "required": [
+        "top",
+        "candidates"
+      ],
+      "additionalProperties": false,
+      "description": "The result of `verify_step`: the resolver's decision without acting."
+    },
+    "PointDescription": {
+      "type": "object",
+      "properties": {
+        "element": {
+          "$ref": "#/definitions/DescribedElement"
+        },
+        "target": {
+          "type": "string",
+          "description": "The element's target phrase, e.g. `the \"Save\" button`."
+        },
+        "context": {
+          "type": "string",
+          "description": "Where it is, as the step wording says it, e.g. `in the \"Booking\" dialog`; absent when it has no context."
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "click",
+                  "fill",
+                  "select",
+                  "check",
+                  "uncheck",
+                  "press",
+                  "expect"
+                ]
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "additionalProperties": false,
+      "description": "The reply to `describe_point` (Pick): the actionable element at a viewport point as the resolver reads it, the target wording the recorder would write for it (`target`, and `context` such as `in the \"Booking\" dialog`), and ready-made steps to insert. A non-interactive element with visible text gets one `expect … shows \"<text>\"` step scoped like a target; nothing under the point gives `steps: []` with `reason`."
+    },
+    "DescribedElement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "description"
+      ],
+      "additionalProperties": false,
+      "description": "A snapshot element as the decider reads it (`describe()` in `src/snapshot.ts`)."
+    },
+    "SnapshotResult": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "dialog": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Title of the open modal dialog (`''` for one without a title), or null."
+        },
+        "headings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DescribedElement"
+          }
+        }
+      },
+      "required": [
+        "url",
+        "title",
+        "dialog",
+        "headings",
+        "elements"
+      ],
+      "additionalProperties": false
+    },
+    "InputEvent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "mouse"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "mousePressed",
+                "mouseReleased",
+                "mouseMoved",
+                "mouseWheel"
+              ]
+            },
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "button": {
+              "type": "string",
+              "enum": [
+                "left",
+                "middle",
+                "right",
+                "none"
+              ]
+            },
+            "clickCount": {
+              "type": "number"
+            },
+            "deltaX": {
+              "type": "number"
+            },
+            "deltaY": {
+              "type": "number"
+            },
+            "modifiers": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "type",
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "key"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "keyDown",
+                "keyUp",
+                "char"
+              ]
+            },
+            "key": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "modifiers": {
+              "type": "number"
+            },
+            "windowsVirtualKeyCode": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "type",
+            "key",
+            "code"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "insertText"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "CDP input replayed into the page. Coordinates are viewport CSS pixels; `modifiers` follow CDP (Alt 1, Ctrl 2, Meta 4, Shift 8)."
+    },
+    "RecordedStep": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "type": "number",
+          "description": "Milliseconds since the epoch when the action happened; identifies the step in `recorded.verified`."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "open",
+            "click",
+            "fill",
+            "select",
+            "check",
+            "uncheck",
+            "press"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "description": "Grammar-valid step text, e.g. `click the \"Save\" button in the \"Booking\" dialog`."
+        },
+        "elementId": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "secret": {
+          "type": "boolean",
+          "description": "A password field: no value is recorded and the text uses `{{PASSWORD}}`."
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "at",
+        "kind",
+        "text"
+      ],
+      "additionalProperties": false,
+      "description": "A step the recorder derived from the person's actions in the browser (docs/develop-mode.md, section 3.4)."
+    },
+    "SessionState": {
+      "type": "string",
+      "enum": [
+        "closed",
+        "starting",
+        "ready",
+        "failed"
+      ]
+    },
+    "SessionVariables": {
+      "type": "object",
+      "properties": {
+        "seed": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "saved": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "param": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "seed",
+        "saved",
+        "param"
+      ],
+      "additionalProperties": false,
+      "description": "What `{{seed.<key>}}`, `{{saved.<name>}}` and `{{param.<key>}}` stand for in the open session: the seed's result, the values `call … and save` steps saved, and the template row. Never environment variables. A value whose key matches /pass|secret|token|key/i is \"••••\"; other values are text (non-strings as JSON), cut to 200 characters."
+    },
+    "ReadyInfo": {
+      "type": "object",
+      "properties": {
+        "engineVersion": {
+          "type": "string"
+        },
+        "app": {
+          "type": "string"
+        },
+        "appDir": {
+          "type": "string"
+        },
+        "docs": {
+          "type": "object",
+          "properties": {
+            "testFormat": {
+              "type": "string"
+            },
+            "authoring": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "testFormat"
+          ],
+          "additionalProperties": false,
+          "description": "Absolute paths of documents an agent may read: the test grammar, and (from 0.21.3) the authoring primer."
+        },
+        "baseUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The base URL a `start` uses while no start has chosen one: `BASE_URL` from the environment, else the app config's `webServer` URL, or null when neither is set. Absent from engines older than `start.baseUrl`, which ignore that field; Launcher then offers no other base."
+        },
+        "requests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DevelopRequestType"
+          },
+          "description": "The request types this engine answers (from 0.23.0). Launcher offers only what the engine has and names the release to install for the rest; engines that send no list are judged by their version."
+        }
+      },
+      "required": [
+        "engineVersion",
+        "app",
+        "appDir",
+        "docs"
+      ],
+      "additionalProperties": false
+    },
+    "DevelopRequestType": {
+      "type": "string",
+      "enum": [
+        "hello",
+        "cases",
+        "load",
+        "load_block",
+        "new_case",
+        "start",
+        "stop",
+        "run_step",
+        "run_from",
+        "verify_step",
+        "describe_point",
+        "suggest_step",
+        "edit_step",
+        "insert_step",
+        "delete_step",
+        "set_meta",
+        "discard_case",
+        "promote",
+        "duplicate_case",
+        "rename_case",
+        "move_case",
+        "snapshot",
+        "page_text",
+        "page_selection",
+        "search_steps",
+        "replace_text",
+        "navigate",
+        "screencast",
+        "input",
+        "record",
+        "recording",
+        "clear_recording",
+        "variables"
+      ]
+    },
+    "DevelopRequest": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "hello"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "cases"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "load"
+            },
+            "caseId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "caseId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "load_block"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "new_case"
+            },
+            "file": {
+              "type": "string",
+              "description": "Relative to the app folder; created when missing. Absent, or a folder ending in \"/\": the file is named after the case (`<folder><slug of the name>.md`). A nameless or hidden file (`booking/.md`) is refused."
+            },
+            "name": {
+              "type": "string"
+            },
+            "caseId": {
+              "type": "string"
+            },
+            "session": {
+              "type": "string"
+            },
+            "seed": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "start"
+            },
+            "baseUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "An absolute http(s) address: its origin becomes the session's base URL (login, `open` paths, `navigate`) for this and later starts, so an agent's start opens the environment the person chose. `null` returns to the default (`ReadyInfo.baseUrl`); absent keeps the current choice."
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "stop"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "run_step"
+            },
+            "index": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "index"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "run_from"
+            },
+            "index": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "index"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "verify_step"
+            },
+            "index": {
+              "type": "number"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "index"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "describe_point"
+            },
+            "x": {
+              "type": "number",
+              "description": "Viewport CSS pixels, the frame of reference of `input` and `frame.viewport`."
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "suggest_step"
+            },
+            "index": {
+              "type": "number",
+              "description": "An own click, fill, select, check, uncheck or expect step (0-based)."
+            },
+            "elementId": {
+              "type": "string",
+              "description": "For an element step, an id from that step's last record in this session (`top[].id` or `candidates[].id`); for an expect (whose record lists no elements), an id from `snapshot`. The page is read again: a changed page is refused."
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "index",
+            "elementId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "edit_step"
+            },
+            "index": {
+              "type": "number"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "index",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "insert_step"
+            },
+            "index": {
+              "type": "number"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "index",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "delete_step"
+            },
+            "index": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "index"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "set_meta"
+            },
+            "draft": {
+              "type": "boolean"
+            },
+            "refs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "session": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "A `## Steps:` block name for the `session:` line (refused when undefined in the app); null removes the line."
+            },
+            "seed": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "A seed name for the `seed:` line (refused when `seeds.ts` lacks it); null removes the line."
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "discard_case"
+            },
+            "caseId": {
+              "type": "string",
+              "description": "A case tagged `@draft` (`<id>` or `<id>[<row key>]`): its whole `## Test:` section is removed from its file."
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "caseId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "promote"
+            },
+            "runs": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "duplicate_case"
+            },
+            "caseId": {
+              "type": "string",
+              "description": "The case to copy (`<id>` or `<id>[<row key>]`; a template row copies its whole template)."
+            },
+            "name": {
+              "type": "string",
+              "description": "The copy's name; absent: \"Copy of <name>\". Its id is the name's slug, made unique; without a name, `<id>-copy`."
+            },
+            "file": {
+              "type": "string",
+              "description": "Relative to the app folder; created when missing. Absent: the case's own file. A folder ending in \"/\": the file is named after the copy (`<folder><slug of the name>.md`), as for `new_case`."
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "caseId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "rename_case"
+            },
+            "caseId": {
+              "type": "string"
+            },
+            "newId": {
+              "type": "string",
+              "description": "A new `id:` value, unused in the app. The dashboard keeps a case's history under its id."
+            },
+            "name": {
+              "type": "string",
+              "description": "A new `## Test:` name, unused in the case's file."
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "caseId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "move_case"
+            },
+            "caseId": {
+              "type": "string",
+              "description": "Any case (not only drafts): its whole `## Test:` section leaves its file."
+            },
+            "file": {
+              "type": "string",
+              "description": "Relative to the app folder; created when missing. A folder ending in \"/\" names the file after the case."
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "caseId",
+            "file"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "snapshot"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "page_text"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "page_selection"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "search_steps"
+            },
+            "query": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "query"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "replace_text"
+            },
+            "from": {
+              "type": "string",
+              "description": "The exact text between the quotes of the label to rename; not empty."
+            },
+            "to": {
+              "type": "string",
+              "description": "The new label; no double quote."
+            },
+            "apply": {
+              "type": "boolean",
+              "description": "Write the files; absent or false only lists the changes (a preview). Needs no session."
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "navigate"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "screencast"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "maxWidth": {
+              "type": "number"
+            },
+            "quality": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "enabled"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "input"
+            },
+            "event": {
+              "$ref": "#/definitions/InputEvent"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "event"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "record"
+            },
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "enabled"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "recording"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "clear_recording"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "variables"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Requests, client → engine. Every request carries a client-chosen `id` that the reply repeats."
+    },
+    "CaseUpdate": {
+      "type": "object",
+      "properties": {
+        "case": {
+          "$ref": "#/definitions/DevelopCase"
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "saved": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string",
+          "description": "The parser's message when the saved file does not parse, or why it could not be saved."
+        }
+      },
+      "required": [
+        "case",
+        "file",
+        "saved"
+      ],
+      "additionalProperties": false,
+      "description": "The reply to an edit (`edit_step`, `insert_step`, `delete_step`, `set_meta`), also the `case.updated` payload."
+    },
+    "CaseDiscarded": {
+      "type": "object",
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "description": "The explicit id of the discarded case, as `load` resolves it."
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "fileRemoved": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "caseId",
+        "file",
+        "fileRemoved"
+      ],
+      "additionalProperties": false,
+      "description": "The reply to `discard_case`, also the `case.discarded` payload: the draft's section is gone from `file`, which was deleted too (`fileRemoved`) when nothing but whitespace was left in it. A discarded case that was loaded is unloaded."
+    },
+    "PromoteResult": {
+      "type": "object",
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "runs": {
+          "type": "number",
+          "description": "How many runs ran (`promote.runs`, fewer when one failed)."
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DevelopStepRecord"
+          },
+          "description": "The last run's records."
+        },
+        "stoppedAt": {
+          "type": "number"
+        },
+        "promoted": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why the draft tag stays when every step passed: `add refs first` when the case has no `refs:`."
+        }
+      },
+      "required": [
+        "passed",
+        "runs",
+        "records",
+        "promoted"
+      ],
+      "additionalProperties": false,
+      "description": "The reply to `promote`. `passed`: every step passed in a fresh session, in every run (`stoppedAt` is the first step that failed, in the last run). `promoted`: `@draft` was removed (through `set_meta`, so `case.updated` was emitted); otherwise `reason` says why not."
+    },
+    "CaseMoved": {
+      "type": "object",
+      "properties": {
+        "case": {
+          "$ref": "#/definitions/DevelopCase"
+        },
+        "from": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "to": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "fileRemoved": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string",
+          "description": "The parser's message when the app does not parse afterwards."
+        }
+      },
+      "required": [
+        "case",
+        "from",
+        "to",
+        "fileRemoved"
+      ],
+      "additionalProperties": false,
+      "description": "The reply to `move_case`: the case's section left `from` (deleted too when nothing but whitespace was left in it, `fileRemoved`) and was appended to `to`. The case is loaded afterwards; `case.updated` names `to`."
+    },
+    "PageText": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "dialog": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "text"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "caption": {
+                "type": "string"
+              },
+              "section": {
+                "type": "string"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "caption",
+              "rows"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Visible tables; `section` is the heading path above it, e.g. \"Studies › Per hour\"."
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "actions": {
+          "type": "object",
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "table": {
+                    "type": "string"
+                  },
+                  "row": {
+                    "type": "number"
+                  },
+                  "cells": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "actions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "table",
+                  "row",
+                  "cells",
+                  "actions"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "other": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "rows",
+            "other"
+          ],
+          "additionalProperties": false,
+          "description": "Buttons and links: per table row, and the rest of the page."
+        },
+        "visibleText": {
+          "type": "string",
+          "description": "Visible text in reading order, headings and named sections as \"#\" lines."
+        }
+      },
+      "required": [
+        "url",
+        "title",
+        "dialog",
+        "tables",
+        "fields",
+        "actions",
+        "visibleText"
+      ],
+      "additionalProperties": false,
+      "description": "What the `expect` judge reads (`pageText()` in `src/snapshot.ts`), the reply to `page_text`."
+    },
+    "PageSelection": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The main frame's selection, whitespace runs collapsed to one space, trimmed, at most 500 characters; `''` when nothing is selected."
+        },
+        "scope": {
+          "type": "string",
+          "description": "The open dialog's title when the selection is in it, else the nearest heading or named section above it (as `page_text` marks them); absent when there is none or nothing is selected."
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false,
+      "description": "The reply to `page_selection`: the text selected in the page, for an `expect` step in its exact wording."
+    },
+    "StepMatch": {
+      "type": "object",
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "description": "The case as `cases` lists it (a template's first row)."
+        },
+        "name": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "line": {
+          "type": "number",
+          "description": "1-based line of the step in the file."
+        },
+        "index": {
+          "type": "number",
+          "description": "0-based index of the own step, as `load` numbers them."
+        },
+        "text": {
+          "type": "string",
+          "description": "The step text as written."
+        }
+      },
+      "required": [
+        "caseId",
+        "name",
+        "file",
+        "line",
+        "index",
+        "text"
+      ],
+      "additionalProperties": false,
+      "description": "One own step a `search_steps` query found, in file order."
+    },
+    "TextChange": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Relative to the app folder."
+        },
+        "line": {
+          "type": "number",
+          "description": "1-based line in the file."
+        },
+        "caseId": {
+          "type": "string",
+          "description": "The `id:` of the case the step belongs to; absent for a step of a `## Steps:` block."
+        },
+        "before": {
+          "type": "string",
+          "description": "The step text before and after the rename."
+        },
+        "after": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "before",
+        "after"
+      ],
+      "additionalProperties": false,
+      "description": "One step line `replace_text` changes (a preview) or changed (applied)."
+    },
+    "DevelopResults": {
+      "type": "object",
+      "properties": {
+        "hello": {
+          "$ref": "#/definitions/ReadyInfo"
+        },
+        "cases": {
+          "type": "object",
+          "properties": {
+            "cases": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/CaseSummary"
+              }
+            },
+            "sessions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "seeds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SeedInfo"
+              }
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cases",
+            "sessions",
+            "seeds"
+          ],
+          "additionalProperties": false,
+          "description": "`sessions`: every `## Steps:` block (any can be a `session:`), the ones already used as sessions first. `error`: the parser's message when the app does not parse (a half-edited file); the cases are then read from the files' sections as written, template rows not expanded. A new case without steps is a draft and parses."
+        },
+        "load": {
+          "type": "object",
+          "properties": {
+            "case": {
+              "$ref": "#/definitions/DevelopCase"
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "case"
+          ],
+          "additionalProperties": false,
+          "description": "`error`: the parser's message when the app does not parse (the case is then read from its section's text)."
+        },
+        "load_block": {
+          "type": "object",
+          "properties": {
+            "block": {
+              "$ref": "#/definitions/DevelopBlock"
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "block"
+          ],
+          "additionalProperties": false,
+          "description": "`error`: the parser's message when the app does not parse (the block is then read from its section's text)."
+        },
+        "new_case": {
+          "type": "object",
+          "properties": {
+            "case": {
+              "$ref": "#/definitions/DevelopCase"
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "case"
+          ],
+          "additionalProperties": false
+        },
+        "start": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "variables": {
+              "$ref": "#/definitions/SessionVariables"
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "additionalProperties": false,
+          "description": "`variables`: the session's values after login and seed (engines before the field omit it)."
+        },
+        "run_step": {
+          "type": "object",
+          "properties": {
+            "record": {
+              "$ref": "#/definitions/DevelopStepRecord"
+            }
+          },
+          "required": [
+            "record"
+          ],
+          "additionalProperties": false
+        },
+        "run_from": {
+          "type": "object",
+          "properties": {
+            "records": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DevelopStepRecord"
+              }
+            },
+            "stoppedAt": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "records"
+          ],
+          "additionalProperties": false
+        },
+        "verify_step": {
+          "$ref": "#/definitions/Verification"
+        },
+        "describe_point": {
+          "$ref": "#/definitions/PointDescription"
+        },
+        "suggest_step": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false,
+          "description": "The step rewritten to target the element; nothing is saved (apply it with `edit_step`)."
+        },
+        "edit_step": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CaseUpdate"
+            },
+            {
+              "$ref": "#/definitions/BlockUpdate"
+            }
+          ]
+        },
+        "insert_step": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CaseUpdate"
+            },
+            {
+              "$ref": "#/definitions/BlockUpdate"
+            }
+          ]
+        },
+        "delete_step": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CaseUpdate"
+            },
+            {
+              "$ref": "#/definitions/BlockUpdate"
+            }
+          ]
+        },
+        "set_meta": {
+          "$ref": "#/definitions/CaseUpdate"
+        },
+        "discard_case": {
+          "$ref": "#/definitions/CaseDiscarded"
+        },
+        "promote": {
+          "$ref": "#/definitions/PromoteResult"
+        },
+        "duplicate_case": {
+          "type": "object",
+          "properties": {
+            "case": {
+              "$ref": "#/definitions/DevelopCase"
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "case"
+          ],
+          "additionalProperties": false,
+          "description": "The copy, loaded (`case.loaded`)."
+        },
+        "rename_case": {
+          "$ref": "#/definitions/CaseUpdate",
+          "description": "The renamed case, loaded (`case.updated`)."
+        },
+        "move_case": {
+          "$ref": "#/definitions/CaseMoved"
+        },
+        "snapshot": {
+          "$ref": "#/definitions/SnapshotResult"
+        },
+        "page_text": {
+          "$ref": "#/definitions/PageText"
+        },
+        "page_selection": {
+          "$ref": "#/definitions/PageSelection"
+        },
+        "search_steps": {
+          "type": "object",
+          "properties": {
+            "matches": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/StepMatch"
+              }
+            }
+          },
+          "required": [
+            "matches"
+          ],
+          "additionalProperties": false,
+          "description": "At most 200 matches, in file order."
+        },
+        "replace_text": {
+          "type": "object",
+          "properties": {
+            "changes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TextChange"
+              }
+            },
+            "applied": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "changes",
+            "applied"
+          ],
+          "additionalProperties": false,
+          "description": "`applied`: the files were rewritten (`apply: true` and at least one change)."
+        },
+        "navigate": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "additionalProperties": false
+        },
+        "recording": {
+          "type": "object",
+          "properties": {
+            "steps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/RecordedStep"
+              }
+            }
+          },
+          "required": [
+            "steps"
+          ],
+          "additionalProperties": false
+        },
+        "variables": {
+          "$ref": "#/definitions/SessionVariables",
+          "description": "The open session's values, all three empty while no session is open."
+        }
+      },
+      "required": [
+        "hello",
+        "cases",
+        "load",
+        "load_block",
+        "new_case",
+        "start",
+        "run_step",
+        "run_from",
+        "verify_step",
+        "describe_point",
+        "suggest_step",
+        "edit_step",
+        "insert_step",
+        "delete_step",
+        "set_meta",
+        "discard_case",
+        "promote",
+        "duplicate_case",
+        "rename_case",
+        "move_case",
+        "snapshot",
+        "page_text",
+        "page_selection",
+        "search_steps",
+        "replace_text",
+        "navigate",
+        "recording",
+        "variables"
+      ],
+      "additionalProperties": false,
+      "description": "Reply payloads per request type (`result` of a successful reply). Requests not listed reply `{}`."
+    },
+    "DevelopReply": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "ok": {
+              "type": "boolean",
+              "const": true
+            },
+            "result": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "id",
+            "ok",
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "ok": {
+              "type": "boolean",
+              "const": false
+            },
+            "error": {
+              "type": "string"
+            },
+            "hint": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "ok",
+            "error"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "DevelopEvent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "engineVersion": {
+              "type": "string"
+            },
+            "app": {
+              "type": "string"
+            },
+            "appDir": {
+              "type": "string"
+            },
+            "docs": {
+              "type": "object",
+              "properties": {
+                "testFormat": {
+                  "type": "string"
+                },
+                "authoring": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "testFormat"
+              ],
+              "additionalProperties": false,
+              "description": "Absolute paths of documents an agent may read: the test grammar, and (from 0.21.3) the authoring primer."
+            },
+            "baseUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The base URL a `start` uses while no start has chosen one: `BASE_URL` from the environment, else the app config's `webServer` URL, or null when neither is set. Absent from engines older than `start.baseUrl`, which ignore that field; Launcher then offers no other base."
+            },
+            "requests": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DevelopRequestType"
+              },
+              "description": "The request types this engine answers (from 0.23.0). Launcher offers only what the engine has and names the release to install for the rest; engines that send no list are judged by their version."
+            },
+            "event": {
+              "type": "string",
+              "const": "ready"
+            }
+          },
+          "required": [
+            "app",
+            "appDir",
+            "docs",
+            "engineVersion",
+            "event"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "case.loaded"
+            },
+            "case": {
+              "$ref": "#/definitions/DevelopCase"
+            }
+          },
+          "required": [
+            "event",
+            "case"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "case": {
+              "$ref": "#/definitions/DevelopCase"
+            },
+            "file": {
+              "type": "string",
+              "description": "Relative to the app folder."
+            },
+            "saved": {
+              "type": "boolean"
+            },
+            "error": {
+              "type": "string",
+              "description": "The parser's message when the saved file does not parse, or why it could not be saved."
+            },
+            "event": {
+              "type": "string",
+              "const": "case.updated"
+            }
+          },
+          "required": [
+            "case",
+            "event",
+            "file",
+            "saved"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "block.loaded"
+            },
+            "block": {
+              "$ref": "#/definitions/DevelopBlock"
+            }
+          },
+          "required": [
+            "event",
+            "block"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "block": {
+              "$ref": "#/definitions/DevelopBlock"
+            },
+            "file": {
+              "type": "string",
+              "description": "Relative to the app folder."
+            },
+            "saved": {
+              "type": "boolean"
+            },
+            "error": {
+              "type": "string",
+              "description": "The parser's message when the saved file does not parse, or why it could not be saved."
+            },
+            "event": {
+              "type": "string",
+              "const": "block.updated"
+            }
+          },
+          "required": [
+            "block",
+            "event",
+            "file",
+            "saved"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "caseId": {
+              "type": "string",
+              "description": "The explicit id of the discarded case, as `load` resolves it."
+            },
+            "file": {
+              "type": "string",
+              "description": "Relative to the app folder."
+            },
+            "fileRemoved": {
+              "type": "boolean"
+            },
+            "event": {
+              "type": "string",
+              "const": "case.discarded"
+            }
+          },
+          "required": [
+            "caseId",
+            "event",
+            "file",
+            "fileRemoved"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "session.state"
+            },
+            "state": {
+              "$ref": "#/definitions/SessionState"
+            },
+            "url": {
+              "type": "string"
+            },
+            "error": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "event",
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "variables"
+            },
+            "variables": {
+              "$ref": "#/definitions/SessionVariables"
+            }
+          },
+          "required": [
+            "event",
+            "variables"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "step.started"
+            },
+            "index": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "event",
+            "index"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "step.finished"
+            },
+            "index": {
+              "type": "number"
+            },
+            "record": {
+              "$ref": "#/definitions/DevelopStepRecord"
+            }
+          },
+          "required": [
+            "event",
+            "index",
+            "record"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "frame"
+            },
+            "data": {
+              "type": "string",
+              "description": "Base64 JPEG."
+            },
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            },
+            "viewport": {
+              "type": "object",
+              "properties": {
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "width",
+                "height"
+              ],
+              "additionalProperties": false
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "event",
+            "data",
+            "width",
+            "height",
+            "viewport",
+            "url"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "recorded"
+            },
+            "step": {
+              "$ref": "#/definitions/RecordedStep"
+            }
+          },
+          "required": [
+            "event",
+            "step"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "recorded.verified"
+            },
+            "at": {
+              "type": "number"
+            },
+            "verification": {
+              "type": "object",
+              "properties": {
+                "chosenId": {
+                  "type": "string"
+                },
+                "confidence": {
+                  "type": "number"
+                },
+                "matches": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "matches"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "event",
+            "at",
+            "verification"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "log"
+            },
+            "level": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warn",
+                "error"
+              ]
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "event",
+            "level",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Events, engine → client; no `id`."
+    },
+    "DevelopMessage": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/DevelopReply"
+        },
+        {
+          "$ref": "#/definitions/DevelopEvent"
+        }
+      ],
+      "description": "Anything the engine writes to stdout."
+    },
+    "SocketHello": {
+      "type": "object",
+      "properties": {
+        "hello": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "token"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "hello"
+      ],
+      "additionalProperties": false,
+      "description": "What the Launcher socket adds (docs/develop-mode.md, section 4.2): the first line a socket client sends, and the engine's `ready` payload plus the loaded case that Launcher answers with."
+    },
+    "SocketHelloReply": {
+      "type": "object",
+      "properties": {
+        "hello": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "case": {
+              "$ref": "#/definitions/DevelopCase"
+            },
+            "session": {
+              "$ref": "#/definitions/SessionState"
+            },
+            "testrail": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "user": {
+                  "type": "string"
+                },
+                "apiKey": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "user",
+                "apiKey"
+              ],
+              "additionalProperties": false
+            },
+            "product": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "app": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "app"
+              ],
+              "additionalProperties": false,
+              "description": "The product and app the develop session belongs to, for the authoring guide."
+            },
+            "engineVersion": {
+              "type": "string"
+            },
+            "app": {
+              "type": "string"
+            },
+            "appDir": {
+              "type": "string"
+            },
+            "docs": {
+              "type": "object",
+              "properties": {
+                "testFormat": {
+                  "type": "string"
+                },
+                "authoring": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "testFormat"
+              ],
+              "additionalProperties": false,
+              "description": "Absolute paths of documents an agent may read: the test grammar, and (from 0.21.3) the authoring primer."
+            },
+            "baseUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The base URL a `start` uses while no start has chosen one: `BASE_URL` from the environment, else the app config's `webServer` URL, or null when neither is set. Absent from engines older than `start.baseUrl`, which ignore that field; Launcher then offers no other base."
+            },
+            "requests": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DevelopRequestType"
+              },
+              "description": "The request types this engine answers (from 0.23.0). Launcher offers only what the engine has and names the release to install for the rest; engines that send no list are judged by their version."
+            }
+          },
+          "required": [
+            "app",
+            "appDir",
+            "docs",
+            "engineVersion",
+            "session"
+          ]
+        }
+      },
+      "required": [
+        "hello"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

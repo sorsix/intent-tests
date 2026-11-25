@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Care calendar</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; }
+    /* Narrower than the week, like the care calendar's horizontally scrolling week: the last columns start off-screen. */
+    .week { display: flex; gap: 12px; width: 560px; height: 260px; overflow: auto; border: 1px solid #ccc; }
+    .day-section { flex: none; }
+    .day-label { font-weight: 600; padding: 4px; }
+    .day-resources-header, .day-calendars { display: flex; }
+    .resource-header-cell { width: 140px; padding: 4px; font-size: 13px; }
+    .calendar-column { position: relative; width: 140px; border-left: 1px solid #eee; }
+    .event-field { height: 32px; border-bottom: 1px dashed #eee; box-sizing: border-box; }
+    .event-field.over { background: #e0f2fe; }
+    /* Like a calendar day view: a session layer above the drop cells, which come above it only 200 ms after a
+       drag starts (.dragging .event-field). */
+    .sessions { position: absolute; inset: 0; z-index: 5; }
+    .dragging .event-field { position: relative; z-index: 2000; }
+    .appointment-block { z-index: 6;
+      position: absolute; left: 4px; right: 4px; height: 28px; background: #bfdbfe; font-size: 12px;
+      border-radius: 4px; padding: 2px 4px; box-sizing: border-box; cursor: grab; }
+  </style>
+</head>
+<body>
+  <h1>Care calendar</h1>
+  <p id="status">Drag an appointment to another slot.</p>
+  <div class="week" id="week"></div>
+  <script>
+    // Like the care calendar (a day grid): empty drop cells named by aria-label with the date and time
+    // they book, one column per resource (role="group", aria-label), and native HTML5 drag-and-drop: appointments are
+    // draggable and store JSON in dataTransfer; each cell has its own dragover/drop listeners.
+    const days = [
+      { key: '2026-11-03', label: 'Tue 03 Nov' },
+      { key: '2026-11-04', label: 'Wed 04 Nov' },
+    ];
+    const resources = ['Dr Smith', 'Dr Jones', 'Dr Lee'];
+    const times = [];
+    const label = (m) => {
+      const h = Math.floor(m / 60), h12 = ((h + 11) % 12) + 1;
+      return `${String(h12).padStart(2, '0')}:${String(m % 60).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+    };
+    for (let m = 9 * 60; m < 14 * 60; m += 30) times.push({ minutes: m, label: label(m) });
+    const appointments = [
+      { subject: 'Jane Doe', day: '2026-11-03', resource: 'Dr Smith', minutes: 9 * 60 },
+      { subject: 'Tom Brown', day: '2026-11-03', resource: 'Dr Jones', minutes: 10 * 60 },
+    ];
+    const week = document.getElementById('week');
+    const columns = new Map();
+    for (const day of days) {
+      const section = document.createElement('div');
+      section.className = 'day-section';
+      section.innerHTML = `<div class="day-label">${day.label}</div><div class="day-resources-header">${resources
+        .map((r) => `<div class="resource-header-cell"><a href="#">${r}</a></div>`)
+        .join('')}</div><div class="day-calendars"></div>`;
+      const calendars = section.querySelector('.day-calendars');
+      for (const resource of resources) {
+        const column = document.createElement('div');
+        column.className = 'calendar-column';
+        column.setAttribute('role', 'group');
+        column.setAttribute('aria-label', resource);
+        for (const time of times) {
+          const cell = document.createElement('div');
+          cell.className = 'event-field';
+          cell.setAttribute('aria-label', `${day.label} ${time.label}`);
+          cell.addEventListener('dragover', (e) => { e.preventDefault(); cell.classList.add('over'); });
+          cell.addEventListener('dragleave', () => cell.classList.remove('over'));
+          cell.addEventListener('drop', (e) => {
+            e.preventDefault();
+            cell.classList.remove('over');
+            const { calendarEvent } = JSON.parse(e.dataTransfer.getData('application/json') || '{}');
+            const appointment = calendarEvent && appointments.find((a) => a.subject === calendarEvent.subject);
+            if (!appointment) return;
+            Object.assign(appointment, { day: day.key, resource, minutes: time.minutes });
+            document.getElementById('status').textContent =
+              `${appointment.subject} moved to ${resource}, ${day.label} ${time.label}`;
+            render();
+          });
+          column.appendChild(cell);
+        }
+        const sessions = document.createElement('div');
+        sessions.className = 'sessions';
+        column.appendChild(sessions);
+        calendars.appendChild(column);
+        columns.set(`${day.key}|${resource}`, column);
+      }
+      week.appendChild(section);
+    }
+    let raise;
+    document.addEventListener('dragstart', () => {
+      raise = setTimeout(() => week.classList.add('dragging'), 200);
+    });
+    // A drop re-renders the dragged block, so its dragend never reaches the document; end the drag on drop too.
+    for (const type of ['drop', 'dragend'])
+      document.addEventListener(type, () => {
+        clearTimeout(raise);
+        week.classList.remove('dragging');
+      });
+    function render() {
+      for (const el of document.querySelectorAll('.appointment-block')) el.remove();
+      for (const a of appointments) {
+        const block = document.createElement('div');
+        block.className = 'event-content main-event-block appointment-block';
+        block.draggable = true;
+        block.style.top = `${((a.minutes - 9 * 60) / 30) * 32 + 2}px`;
+        block.textContent = `${a.subject} ${label(a.minutes)} - ${label(a.minutes + 30)}`;
+        block.addEventListener('dragstart', (e) =>
+          e.dataTransfer.setData('application/json', JSON.stringify({ calendarEvent: { subject: a.subject } })),
+        );
+        columns.get(`${a.day}|${a.resource}`).appendChild(block);
+      }
+    }
+    render();
+  </script>
+</body>
+</html>

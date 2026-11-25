@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Book a visit – St. Luke Clinic</title>
+  <!-- A booking calendar that loads how far ahead it may go with a slow request and no loading indicator, and refuses
+       "Next week" until that has arrived, like an appointment picker waiting for its due date. -->
+  <style>
+    body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1c2430; background: #f4f6f8; }
+    main { max-width: 600px; margin: 24px auto; padding: 0 24px; }
+    .calendar { display: flex; gap: 12px; align-items: center; background: #fff; border: 1px solid #d8dee5; border-radius: 6px; padding: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Book a visit</h1>
+    <div class="calendar">
+      <span id="week">Week 1</span>
+      <button type="button" id="next">Next week</button>
+      <span id="note" role="status"></span>
+    </div>
+  </main>
+  <script>
+    let week = 1, lastWeek = null;
+    fetch('limits.json?delay=2500').then((r) => r.json()).then((j) => { lastWeek = j.lastWeek; });
+    document.getElementById('next').addEventListener('click', () => {
+      if (lastWeek !== null && week < lastWeek) {
+        week++;
+        document.getElementById('week').textContent = `Week ${week}`;
+        document.getElementById('note').textContent = '';
+      } else {
+        document.getElementById('note').textContent = 'Maximum booking time reached';
+      }
+    });
+  </script>
+</body>
+</html>

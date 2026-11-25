@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recorder practice – St. Luke Clinic</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- A page for the recorder's tests (test/recorder.test.ts): no login, every action writes a line to #log. -->
+  <main>
+    <h1>Recorder practice</h1>
+    <p id="plain-text">Click anywhere on this sentence: it is plain text, not a control.</p>
+
+    <form class="panel" id="enrol-form" aria-labelledby="enrol-title" novalidate>
+      <h2 id="enrol-title">Enrolment</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="mrn">MRN</label>
+          <input type="text" id="mrn">
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password">
+        </div>
+        <div class="field">
+          <label for="ethnicity">Ethnicity</label>
+          <select id="ethnicity">
+            <option value="">Choose…</option>
+            <option>Māori</option>
+            <option>Pacific</option>
+            <option>European</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label><input type="checkbox" id="consent"> I consent to enrol</label>
+        </div>
+      </div>
+      <div class="toolbar" style="margin: 0">
+        <div class="spacer"></div>
+        <button type="submit" id="enrol-submit">Enrol patient</button>
+      </div>
+    </form>
+
+    <section class="panel" id="booking" aria-labelledby="booking-title" style="margin-top: 16px">
+      <h2 id="booking-title">Booking</h2>
+      <div class="toolbar" style="margin: 0">
+        <button type="button" id="book">Book slot</button>
+        <button type="button" id="open-dialog">Review booking</button>
+        <a href="#top" id="to-top">Back to top</a>
+        <a href="record.html?again=1" id="again">Practice again</a>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 16px">
+      <table id="patients">
+        <caption>Patients</caption>
+        <thead>
+          <tr><th>Patient</th><th>Date of birth</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Ana Petrova</td><td>1984-03-12</td><td>Scheduled</td><td><button type="button" data-row="Ana Petrova">Edit</button></td></tr>
+          <tr><td>Boris Ilievski</td><td>1979-11-02</td><td>Checked in</td><td><button type="button" data-row="Boris Ilievski">Edit</button></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <p id="log" role="status" style="margin-top: 16px; color: var(--muted)"></p>
+  </main>
+
+  <dialog id="booking-dialog" aria-labelledby="booking-dialog-title">
+    <form method="dialog">
+      <h2 id="booking-dialog-title">Booking</h2>
+      <p>Review the slot before you save it.</p>
+      <div class="toolbar" style="margin: 0">
+        <div class="spacer"></div>
+        <button type="button" id="dialog-cancel">Cancel</button>
+        <button type="submit" id="dialog-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const log = document.getElementById('log');
+    const note = (message) => { log.textContent = message; };
+
+    document.getElementById('enrol-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      note('Enrolled ' + (document.getElementById('mrn').value || 'nobody'));
+    });
+    document.getElementById('book').addEventListener('click', () => note('Slot booked'));
+    document.getElementById('consent').addEventListener('change', (e) => note(e.target.checked ? 'Consent given' : 'Consent withdrawn'));
+    document.getElementById('ethnicity').addEventListener('change', (e) => note('Ethnicity: ' + e.target.value));
+    for (const button of document.querySelectorAll('[data-row]')) {
+      button.addEventListener('click', () => note('Editing ' + button.dataset.row));
+    }
+
+    const dialog = document.getElementById('booking-dialog');
+    document.getElementById('open-dialog').addEventListener('click', () => dialog.showModal());
+    document.getElementById('dialog-cancel').addEventListener('click', () => dialog.close());
+    dialog.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      dialog.close();
+      note('Booking saved');
+    });
+  </script>
+</body>
+</html>

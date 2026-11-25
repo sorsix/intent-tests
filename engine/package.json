@@ -1,0 +1,60 @@
+{
+  "name": "@sorsix/intent-engine",
+  "version": "0.29.2",
+  "description": "Intent Engine: Markdown intent tests with Playwright, model decisions, and dashboard reporting",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "bin": {
+    "intent-engine": "bin/intent-test.mjs",
+    "intent-test": "bin/intent-test.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "docs",
+    "README.md",
+    "AGENTS.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "test:self": "node test/run-self-test.mjs",
+    "format": "prettier --write \"src/**/*.{ts,mjs}\" \"test/**/*.{ts,mjs}\" \"bin/**/*.mjs\" \"*.{ts,json}\" \".prettierrc.json\"",
+    "format:check": "prettier --check \"src/**/*.{ts,mjs}\" \"test/**/*.{ts,mjs}\" \"bin/**/*.mjs\" \"*.{ts,json}\" \".prettierrc.json\""
+  },
+  "dependencies": {
+    "@playwright/test": "1.63.0"
+  },
+  "devDependencies": {
+    "@types/node": "25.0.10",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sorsix/intent-tests.git",
+    "directory": "engine"
+  },
+  "homepage": "https://github.com/sorsix/intent-tests/tree/main/engine#readme",
+  "bugs": {
+    "url": "https://github.com/sorsix/intent-tests/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

@@ -1,0 +1,50 @@
+# Runs when the sync (scripts/release/engine-sync.mjs) pushes a vX.Y.Z tag: the checks, an npm publish of
+# @sorsix/intent-engine when the NPM_TOKEN repository secret exists (skipped otherwise), and a GitHub release with the
+# version's CHANGELOG.md section. Inert in the internal monorepo.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write # the GitHub release
+  id-token: write # npm provenance
+
+defaults:
+  run:
+    working-directory: engine
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+          registry-url: https://registry.npmjs.org
+      - name: The tag matches package.json
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:self
+      - name: Publish to npm
+        if: ${{ env.NODE_AUTH_TOKEN != '' }}
+        run: npm publish --provenance --access public
+      - name: npm publishing is not set up
+        if: ${{ env.NODE_AUTH_TOKEN == '' }}
+        run: echo "::notice::No NPM_TOKEN secret, so npm publishing was skipped."
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '$0 ~ "^## " { if (found) exit; if (index($0, v)) found = 1; next } found' CHANGELOG.md > notes.md
+          gh release create "$GITHUB_REF_NAME" --title "Intent Engine $version" --notes-file notes.md

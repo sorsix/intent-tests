@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient details – St. Luke Clinic</title>
+  <!-- Panels whose title is a heading in a ribbon above cards that have headings of the same level: on screen the cards
+       are inside the panel, so the page text nests them under it. -->
+  <style>
+    body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1c2430; background: #f4f6f8; }
+    main { max-width: 900px; margin: 24px auto; padding: 0 24px; display: flex; flex-direction: column; gap: 16px; }
+    h1 { font-size: 22px; margin: 0; }
+    h4 { margin: 0; font-size: 15px; }
+    .card-wrapper { background: #fff; border: 1px solid #d8dee5; border-radius: 6px; }
+    .ribbon { padding: 8px 12px; background: #0b6e6e; color: #fff; }
+    .ribbon div { display: flex; gap: 8px; align-items: center; }
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+    .card { border: 1px solid #d8dee5; border-radius: 4px; padding: 8px; }
+    .card p, .notes p { margin: 4px 0 0; }
+    .notes { padding: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Ana Petrova</h1>
+    <div class="card-wrapper">
+      <div class="ribbon"><div><img alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" width="12" height="12"><h4>Visit details</h4></div></div>
+      <div class="cards">
+        <div class="card"><h4>Appointment</h4><p>Date: 24/10/2026</p><p>Status: In progress</p></div>
+        <div class="card"><h4>Lab results</h4><p>Result:</p><p>Elevated glucose</p></div>
+      </div>
+    </div>
+    <div class="card-wrapper">
+      <div class="ribbon"><div><h4>Notes</h4></div></div>
+      <div class="notes">
+        <p>Prefers afternoon appointments</p>
+        <!-- An icon-font button: the ligature "more_vert" renders as an icon and is not part of the label. -->
+        <button type="button"><span class="material-icons" aria-hidden="true">more_vert</span><span>more</span></button>
+      </div>
+    </div>
+    <!-- Row icons as a component library renders them: <p-icon fontIcon="…" pTooltip="…" (click)=…>, aria-hidden, no role, and
+         a tooltip that exists only while hovered. Named only by the icon they show. -->
+    <div class="card-wrapper">
+      <div class="ribbon"><div><h4>Documents</h4></div></div>
+      <div class="notes">
+        <table id="documents">
+          <tr><td>File name</td><td>Open</td><td>Delete</td></tr>
+          <tr><td>referral.pdf</td>
+            <td><p-icon fonticon="attach" class="icon-attached clickable p-icon icon_attach" aria-hidden="true" data-file="referral.pdf" data-action-name="Opened"></p-icon></td>
+            <td><p-icon fonticon="delete" class="icon-not-attached clickable p-icon icon_delete" aria-hidden="true" data-file="referral.pdf" data-action-name="Deleted"></p-icon></td></tr>
+          <tr><td>prior exams.jpg</td>
+            <td><p-icon class="icon-attached p-icon icon_attach" aria-hidden="true" data-file="prior exams.jpg" data-action-name="Opened"></p-icon></td>
+            <td><p-icon class="icon-not-attached p-icon icon_delete" aria-hidden="true" data-file="prior exams.jpg" data-action-name="Deleted"></p-icon></td></tr>
+        </table>
+        <p id="document-status"></p>
+      </div>
+    </div>
+  </main>
+  <style>
+    p-icon { display: inline-block; width: 20px; height: 20px; cursor: pointer; }
+    p-icon.icon_attach::before { content: "📎"; }
+    p-icon.icon_delete::before { content: "🗑"; }
+  </style>
+  <script>
+    for (const icon of document.querySelectorAll('#documents p-icon')) {
+      icon.addEventListener('click', () => {
+        document.getElementById('document-status').textContent = `${icon.dataset.actionName} ${icon.dataset.file}`;
+      });
+    }
+  </script>
+</body>
+</html>

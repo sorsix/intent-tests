@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff login – St. Luke Clinic</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js"></script>
+</head>
+<body>
+  <main class="login-wrap">
+    <h1>St. Luke Clinic</h1>
+    <form class="panel" id="login-form" novalidate>
+      <h2>Staff login</h2>
+      <div id="login-error" class="alert" role="alert" hidden>Invalid username or password.</div>
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password">
+      </div>
+      <div class="buttons">
+        <button type="submit">Log in</button>
+        <button type="button" class="secondary" id="card-login">Sign in with staff card</button>
+      </div>
+      <div class="links"><a href="#" id="forgot">Forgot password?</a></div>
+    </form>
+  </main>
+  <script>
+    const u = currentUser();
+    if (u) location.replace(homeFor(u.role));
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const session = login(document.getElementById('username').value, document.getElementById('password').value);
+      const err = document.getElementById('login-error');
+      if (!session) {
+        err.textContent = 'Invalid username or password.';
+        err.hidden = false;
+        return;
+      }
+      location.href = homeFor(session.role);
+    });
+
+    document.getElementById('card-login').addEventListener('click', () => {
+      const err = document.getElementById('login-error');
+      err.textContent = 'No card reader detected.';
+      err.hidden = false;
+    });
+
+    document.getElementById('forgot').addEventListener('click', (e) => {
+      e.preventDefault();
+      toast('Please contact the IT helpdesk on extension 4400.');
+    });
+  </script>
+</body>
+</html>

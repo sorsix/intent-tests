@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documents – St. Luke Clinic</title>
+  <!-- Three ways a page opens a file picker:
+       1. A basic upload control: a focusable <label for> card ("Upload Files") over a hidden <input type="file">.
+          Each uploaded file becomes a card with an eye icon that shows it in a PDF viewer drawn like pdf.js: the page
+          on a canvas, with a transparent text layer over it.
+       2. A plain, visible <input type="file"> with its <label>.
+       3. A button whose script clicks a hidden file input that has no label. -->
+  <style>
+    body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1c2430; background: #f4f6f8; }
+    main { max-width: 1000px; margin: 24px auto; padding: 0 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    h1 { grid-column: 1 / -1; font-size: 22px; margin: 0; }
+    section { background: #fff; border: 1px solid #d8dee5; border-radius: 6px; padding: 12px; }
+    h2 { font-size: 16px; margin: 0 0 8px; }
+    .cards { display: flex; gap: 12px; flex-wrap: wrap; }
+    .card { width: 120px; height: 120px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.15); display: flex;
+      flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 13px; background: #fff; }
+    .card .plus { font-size: 32px; line-height: 1; }
+    .doc { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .icon { font-family: monospace; font-size: 12px; cursor: pointer; color: #0b6e6e; }
+    .viewer { position: relative; width: 420px; height: 300px; border: 1px solid #d8dee5; background: #fafafa; }
+    .viewer canvas { position: absolute; inset: 0; }
+    .textLayer { position: absolute; inset: 0; }
+    .textLayer span { position: absolute; color: transparent; white-space: pre; font: 16px sans-serif; }
+    #status p { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Documents for Ana Petrova</h1>
+
+    <section>
+      <h2>Additional Paperwork</h2>
+      <div class="cards" id="paperwork">
+        <div>
+          <label class="card" for="paperwork-file" tabindex="0">
+            <div class="plus" aria-hidden="true">+</div>
+            <small>Upload Files</small>
+          </label>
+          <input id="paperwork-file" type="file" hidden accept="application/pdf">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>PDF viewer</h2>
+      <div class="viewer" id="viewer" hidden>
+        <canvas width="420" height="300"></canvas>
+        <div class="textLayer"></div>
+      </div>
+      <p id="viewer-empty">No document open</p>
+    </section>
+
+    <section>
+      <h2>Referral</h2>
+      <label for="referral">Referral letter</label>
+      <input id="referral" type="file">
+      <h2 style="margin-top: 16px">Photo</h2>
+      <button type="button" id="attach-photo">Attach photo</button>
+      <input id="photo" type="file" style="display: none">
+    </section>
+
+    <section id="status" aria-live="polite"><h2>Received</h2><button type="button" id="clear">Clear received</button></section>
+  </main>
+  <script>
+    const status = (text) => {
+      const p = document.createElement('p');
+      p.textContent = text;
+      document.getElementById('status').append(p);
+    };
+
+    // The text a simple, uncompressed PDF draws: every "(…) Tj" string of its content streams.
+    const pdfLines = (bytes) => [...bytes.matchAll(/\(((?:[^()\\]|\\.)*)\)\s*Tj/g)].map((m) => m[1]);
+
+    const show = async (file) => {
+      const lines = pdfLines(new TextDecoder('latin1').decode(await file.arrayBuffer()));
+      const viewer = document.getElementById('viewer');
+      const canvas = viewer.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#111';
+      ctx.font = '16px sans-serif';
+      const layer = viewer.querySelector('.textLayer');
+      layer.replaceChildren();
+      lines.forEach((line, i) => {
+        const y = 40 + i * 28;
+        ctx.fillText(line, 24, y);
+        const span = document.createElement('span');
+        span.textContent = line;
+        span.style.left = '24px';
+        span.style.top = `${y - 16}px`;
+        layer.append(span);
+      });
+      viewer.hidden = false;
+      document.getElementById('viewer-empty').hidden = true;
+    };
+
+    document.getElementById('paperwork-file').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const doc = document.createElement('div');
+      doc.className = 'doc';
+      doc.innerHTML = '<div class="card"><span aria-hidden="true">PDF</span><span class="name"></span></div>';
+      doc.querySelector('.name').textContent = file.name;
+      const eye = document.createElement('span');
+      eye.className = 'icon';
+      eye.textContent = 'visibility';
+      eye.addEventListener('click', () => show(file));
+      doc.append(eye);
+      document.getElementById('paperwork').prepend(doc);
+      e.target.value = '';
+    });
+    document.getElementById('referral').addEventListener('change', (e) => {
+      if (e.target.files[0]) status(`Referral letter: ${e.target.files[0].name}`);
+    });
+    document.getElementById('clear').addEventListener('click', () => document.querySelectorAll('#status p').forEach((p) => p.remove()));
+    document.getElementById('attach-photo').addEventListener('click', () => document.getElementById('photo').click());
+    document.getElementById('photo').addEventListener('change', (e) => {
+      if (e.target.files[0]) status(`Photo: ${e.target.files[0].name}`);
+    });
+  </script>
+</body>
+</html>

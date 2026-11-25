@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enrolment – St. Luke Clinic</title>
+  <!-- A full-screen dialog that doesn't say it is modal (aria-modal="false") and has no backdrop around it, over a page
+       with a button of the same name, like an "Enrol and book appointment" dialog. Only the dialog can be used. -->
+  <style>
+    body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1c2430; background: #f4f6f8; }
+    main { padding: 24px; }
+    [role="dialog"] { position: fixed; inset: 0; background: #fff; padding: 24px; box-sizing: border-box; }
+    [role="dialog"] header { display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Participant</h1>
+    <button type="button" id="page-close">Close</button>
+    <!-- Long page text before the dialog: the page text is cut at 12,000 characters, so the dialog's own text reaches
+         the model only if the dialog is reported as open (see the self-test). -->
+    <p id="terms"></p>
+  </main>
+  <div role="dialog" aria-modal="false" aria-labelledby="enrol-title">
+    <header>
+      <h2 id="enrol-title">Enrol and book appointment</h2>
+      <button type="button" id="dialog-close">Close</button>
+    </header>
+    <p>Have you noticed any recent changes to your breasts within the last 12 months?</p>
+    <p id="status"></p>
+  </div>
+  <script>
+    document.getElementById('terms').textContent = 'Terms of the screening programme apply. '.repeat(350);
+    document.getElementById('dialog-close').addEventListener('click', () => {
+      document.querySelector('[role="dialog"]').remove();
+      document.querySelector('h1').insertAdjacentHTML('afterend', '<p>Enrolment closed</p>');
+    });
+  </script>
+</body>
+</html>

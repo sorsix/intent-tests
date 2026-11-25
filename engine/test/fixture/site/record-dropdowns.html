@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recorder dropdowns – St. Luke Clinic</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .beyond-form-field { display: inline-flex; align-items: center; border: 1px solid #999; padding: 4px; cursor: pointer; }
+    .beyond-form-field input { border: 0; width: 220px; cursor: pointer; }
+    .cdk-overlay-container { position: fixed; inset: 0; pointer-events: none; }
+    /* (styles.css centres a pane for triage.html; these sit under their fields) */
+    .cdk-overlay-pane { position: absolute; transform: none; width: auto; pointer-events: auto; background: #fff; border: 1px solid #999; padding: 6px; }
+    .cdk-overlay-pane[hidden] { display: none; }
+    .beyond-option { display: flex; gap: 8px; align-items: center; padding: 6px; cursor: pointer; }
+    .beyond-option.active { background: #e0e7ff; }
+    .beyond-option .mat-checkbox { pointer-events: none; }
+    [role="option"] { padding: 6px; cursor: pointer; }
+    #clinic { display: inline-block; min-width: 200px; border: 1px solid #999; padding: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <!-- Custom dropdowns for the recorder's tests (test/recorder.test.ts). "Screening Status" copies a "beyond-select" component: a
+       read-only input with role listbox inside a clickable form field, and an overlay panel with a search field, icon
+       buttons and options that are rows with a checkbox the pointer passes through. "Clinic" is a single-select
+       combobox whose options have role option (mat-select, p-select). -->
+  <main>
+    <section class="panel" aria-labelledby="worklist-title">
+      <h2 id="worklist-title">DNA worklist</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="screening">Screening Status</label>
+          <div class="beyond-form-field" id="screening-field">
+            <input id="screening" role="listbox" readonly>
+            <span class="material-icons" id="screening-arrow">arrow_drop_down</span>
+          </div>
+        </div>
+        <div class="field">
+          <span id="clinic-label">Clinic</span>
+          <div id="clinic" role="combobox" tabindex="0" aria-labelledby="clinic-label" aria-expanded="false">Choose…</div>
+        </div>
+      </div>
+      <!-- Options on the page itself, not in a dropdown's panel (a questionnaire's checkbox list): checks, not selects. -->
+      <div role="listbox" aria-label="Ethnicity" aria-multiselectable="true" id="ethnicity">
+        <div role="option"><label><input type="checkbox" id="maori"> Māori</label></div>
+        <div role="option"><label><input type="checkbox"> Pacific</label></div>
+      </div>
+      <button type="button" id="search">Search</button>
+    </section>
+    <p id="log" role="status" style="margin-top: 16px"></p>
+  </main>
+
+  <div class="cdk-overlay-container">
+    <div class="cdk-overlay-pane" id="screening-panel" hidden style="top: 145px; left: 135px">
+      <div class="beyond-options-container">
+        <div class="beyond-actions">
+          <input id="screening-search" aria-label="Search select options" placeholder="Search" autocomplete="off">
+          <button type="button" aria-label="Sort"><span class="material-icons">arrow_downward</span></button>
+          <button type="button" aria-label="Select all"><mat-icon>select_all</mat-icon></button>
+        </div>
+        <div id="screening-options"></div>
+      </div>
+    </div>
+    <div class="cdk-overlay-pane" id="clinic-panel" hidden style="top: 145px; left: 560px">
+      <div role="listbox" aria-label="Clinic">
+        <div role="option" aria-selected="false">Riverside</div>
+        <div role="option" aria-selected="false">Wellington <mat-icon>location_on</mat-icon></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const log = document.getElementById('log');
+    const labels = ['N/A', 'Assigned to screening organization', 'Assigned to screening user', 'Returned to the Lead provider'];
+    const chosen = new Set();
+    const input = document.getElementById('screening');
+    const panel = document.getElementById('screening-panel');
+    const search = document.getElementById('screening-search');
+    const list = document.getElementById('screening-options');
+    const render = () => {
+      list.replaceChildren(
+        ...labels
+          .filter((l) => l.toLowerCase().includes(search.value.toLowerCase()))
+          .map((label) => {
+            const row = document.createElement('div');
+            row.className = 'beyond-option' + (chosen.has(label) ? ' active' : '');
+            row.setAttribute('role', 'listitem');
+            row.tabIndex = 0;
+            row.innerHTML = `<span class="mat-checkbox"><input type="checkbox"${chosen.has(label) ? ' checked' : ''}></span><div></div>`;
+            row.lastChild.textContent = label;
+            row.addEventListener('click', () => {
+              chosen.has(label) ? chosen.delete(label) : chosen.add(label);
+              input.value = [...chosen].join(', ');
+              log.textContent = 'Screening Status: ' + input.value;
+              render();
+            });
+            return row;
+          }),
+      );
+    };
+    document.getElementById('screening-field').addEventListener('click', () => {
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) {
+        search.value = '';
+        render();
+        search.focus();
+      }
+    });
+    search.addEventListener('input', render);
+
+    const clinic = document.getElementById('clinic');
+    const clinicPanel = document.getElementById('clinic-panel');
+    clinic.addEventListener('click', () => {
+      clinicPanel.hidden = !clinicPanel.hidden;
+      clinic.setAttribute('aria-expanded', String(!clinicPanel.hidden));
+    });
+    for (const option of clinicPanel.querySelectorAll('[role="option"]')) {
+      option.addEventListener('click', () => {
+        clinicPanel.querySelectorAll('[role="option"]').forEach((o) => o.setAttribute('aria-selected', 'false'));
+        option.setAttribute('aria-selected', 'true');
+        clinic.textContent = option.firstChild.textContent.trim();
+        clinicPanel.hidden = true;
+        clinic.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        panel.hidden = true;
+        clinicPanel.hidden = true;
+      }
+    });
+    document.getElementById('search').addEventListener('click', () => (log.textContent = 'Searched'));
+  </script>
+</body>
+</html>

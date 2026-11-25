@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reading list – St. Luke Clinic</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js"></script>
+</head>
+<body>
+  <!-- Cases any signed-in user can read, one reader at a time, like a first-read worklist. Claims are kept by the
+       fixture server (test/fixture-server.ts), so every window sees them. A case someone else reads drops off this list without a
+       reload (polled every half second, standing in for a websocket), and comes back when they close it. -->
+  <header class="app-header"></header>
+  <main>
+    <h1>Reading list</h1>
+    <section class="panel">
+      <table id="cases">
+        <caption>Cases available for reading</caption>
+        <thead><tr><th>Patient</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p id="empty" hidden>No cases to read</p>
+    </section>
+  </main>
+
+  <dialog id="read-dialog" aria-labelledby="read-title">
+    <h2 id="read-title"></h2>
+    <p>You are reading this case. Other readers can't open it until you close it.</p>
+    <button type="button" id="close-read">Close</button>
+  </dialog>
+
+  <script>
+    const user = currentUser();
+    if (!user) location.replace('index.html');
+    else renderHeader(user, 'reading.html');
+
+    const CASES = ['Ana Petrova', 'Marko Ilievski'];
+    const dialog = document.getElementById('read-dialog');
+    let reading = null;
+    let shown = null;
+
+    const api = (path, method = 'GET') =>
+      fetch(`/api/claims${path}?by=${encodeURIComponent(user.username)}`, { method });
+
+    async function refresh() {
+      const claims = await (await api('')).json();
+      const open = CASES.filter((c) => !claims[c] || claims[c] === user.username);
+      // Only a change redraws the rows, like a grid told to remove or add one: a click never lands on a replaced row.
+      if (open.join('\n') === shown) return;
+      shown = open.join('\n');
+      document.querySelector('#cases tbody').innerHTML = open
+        .map((c) => `<tr><td>${escapeHtml(c)}</td><td><button type="button" class="secondary" data-case="${escapeHtml(c)}">Read</button></td></tr>`)
+        .join('');
+      document.getElementById('empty').hidden = open.length > 0;
+    }
+
+    document.querySelector('#cases tbody').addEventListener('click', async (event) => {
+      const item = event.target.closest('button[data-case]')?.dataset.case;
+      if (!item) return;
+      const res = await api(`/${encodeURIComponent(item)}`, 'POST');
+      if (!res.ok) {
+        toast((await res.json()).message);
+        return refresh();
+      }
+      reading = item;
+      document.getElementById('read-title').textContent = `Reading ${item}`;
+      dialog.showModal();
+    });
+
+    document.getElementById('close-read').addEventListener('click', async () => {
+      await api(`/${encodeURIComponent(reading)}`, 'DELETE');
+      reading = null;
+      dialog.close();
+      refresh();
+    });
+
+    if (user) {
+      refresh();
+      setInterval(refresh, 500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Date of birth – St. Luke Clinic</title>
+  <!-- A date of birth picker like Angular Material's: clicking a year in the year grid replaces the grid with that
+       year's months, so the clicked cell's row is gone although the click worked (an online booking page). -->
+  <style>
+    body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1c2430; background: #f4f6f8; }
+    main { max-width: 600px; margin: 24px auto; padding: 0 24px; }
+    .picker { background: #fff; border: 1px solid #d8dee5; border-radius: 6px; padding: 12px; }
+    td button { width: 72px; padding: 6px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Date of birth</h1>
+  <div class="picker" role="dialog" aria-label="Choose a date">
+    <div id="period">2016 to 2019</div>
+    <div id="body"></div>
+  </div>
+  <p id="chosen"></p>
+</main>
+<script>
+  const body = document.getElementById('body');
+  const grid = (cells, onClick) => {
+    const table = document.createElement('table');
+    table.setAttribute('role', 'grid');
+    for (let i = 0; i < cells.length; i += 2) {
+      const row = table.insertRow();
+      row.setAttribute('role', 'row');
+      for (const cell of cells.slice(i, i + 2)) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = cell.text;
+        button.setAttribute('aria-label', cell.label);
+        button.addEventListener('click', () => onClick(cell));
+        row.insertCell().append(button);
+      }
+    }
+    // Like Material's view components, the wrapper around the table is replaced as well.
+    const view = document.createElement('div');
+    view.className = 'view';
+    view.append(table);
+    body.replaceChildren(view);
+  };
+  const months = (year) => {
+    document.getElementById('period').textContent = String(year);
+    grid(['JAN', 'FEB', 'MAR', 'APR'].map((m, i) => ({ text: m, label: `${['January', 'February', 'March', 'April'][i]} ${year}` })), (cell) => {
+      document.getElementById('chosen').textContent = `Chosen: ${cell.label}`;
+    });
+  };
+  grid([2016, 2017, 2018, 2019].map((y) => ({ text: String(y), label: String(y) })), (cell) => months(cell.text));
+</script>
+</body>
+</html>

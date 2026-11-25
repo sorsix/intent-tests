@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reception worklist – St. Luke Clinic</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js"></script>
+</head>
+<body>
+  <header class="app-header"></header>
+  <main>
+    <h1>Reception worklist</h1>
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <label for="search">Search patient</label>
+          <input type="search" id="search" placeholder="Name or date of birth">
+        </div>
+        <div>
+          <label for="status-filter">Status</label>
+          <select id="status-filter">
+            <option value="">All</option>
+            <option>Scheduled</option>
+            <option>Checked in</option>
+            <option>Triaged</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+        <button type="button" class="icon" id="refresh" aria-label="Refresh worklist" title="Refresh worklist">&#x27F3;</button>
+        <div class="spacer"></div>
+        <a href="register.html">Register walk-in</a>
+      </div>
+      <table id="worklist">
+        <caption>Today's appointments</caption>
+        <thead>
+          <tr><th>Time</th><th>Patient</th><th>Date of birth</th><th>Doctor</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="empty" class="empty" hidden>No appointments match your search.</div>
+    </section>
+  </main>
+
+  <dialog id="checkin-dialog" aria-labelledby="checkin-title">
+    <form method="dialog" id="checkin-form" novalidate>
+      <h2 id="checkin-title">Check in patient</h2>
+      <dl class="details">
+        <dt>Patient</dt><dd id="ci-patient"></dd>
+        <dt>Date of birth</dt><dd id="ci-dob"></dd>
+        <dt>Doctor</dt><dd id="ci-doctor"></dd>
+        <dt>Time</dt><dd id="ci-time"></dd>
+      </dl>
+      <div id="ci-error" class="alert" role="alert" hidden></div>
+      <div class="field">
+        <label for="ci-insurance">Insurance</label>
+        <select id="ci-insurance">
+          <option value="">Choose…</option>
+          <option>Public</option>
+          <option>Private</option>
+          <option>Self-pay</option>
+        </select>
+      </div>
+      <div class="field inline">
+        <input type="checkbox" id="ci-consent">
+        <label for="ci-consent">Consent form signed</label>
+      </div>
+      <div class="buttons">
+        <button type="button" class="secondary" id="ci-close">Close</button>
+        <button type="submit" id="ci-confirm">Confirm check-in</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="reschedule-dialog" aria-labelledby="reschedule-title">
+    <form method="dialog" id="reschedule-form" novalidate>
+      <h2 id="reschedule-title">Reschedule appointment</h2>
+      <p id="rs-patient"></p>
+      <div id="rs-error" class="alert" role="alert" hidden>Enter a new time.</div>
+      <div class="field">
+        <label for="rs-time">New time</label>
+        <input type="time" id="rs-time">
+      </div>
+      <div class="buttons">
+        <button type="button" class="secondary" id="rs-close">Close</button>
+        <button type="submit">Save new time</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="cancel-dialog" aria-labelledby="cancel-title">
+    <form method="dialog" id="cancel-form">
+      <h2 id="cancel-title">Cancel appointment?</h2>
+      <p id="cx-text"></p>
+      <div class="buttons">
+        <button type="button" class="secondary" id="cx-keep">Keep appointment</button>
+        <button type="submit" class="danger">Yes, cancel appointment</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const user = requireRole('reception');
+    if (user) {
+      renderHeader(user, 'worklist.html');
+      showFlash();
+    }
+
+    const tbody = document.querySelector('#worklist tbody');
+    const search = document.getElementById('search');
+    const statusFilter = document.getElementById('status-filter');
+    let selectedId = null;
+
+    function render() {
+      const db = loadDb();
+      const q = search.value.trim().toLowerCase();
+      const st = statusFilter.value;
+      const rows = db.appointments
+        .filter((a) => !q || a.patient.toLowerCase().includes(q) || a.dob.includes(q))
+        .filter((a) => !st || a.status === st)
+        .sort((a, b) => (a.time === 'Walk-in') - (b.time === 'Walk-in') || a.time.localeCompare(b.time));
+
+      tbody.innerHTML = rows.map((a) => `
+        <tr data-id="${a.id}">
+          <td>${escapeHtml(a.time)}</td>
+          <td>${escapeHtml(a.patient)}</td>
+          <td>${escapeHtml(a.dob)}</td>
+          <td>${escapeHtml(a.doctor)}</td>
+          <td>${statusBadge(a.status)}</td>
+          <td class="actions">
+            <button type="button" class="small" data-action="checkin" ${a.status !== 'Scheduled' ? 'disabled' : ''}>Check in</button>
+            <button type="button" class="small secondary" data-action="reschedule" ${a.status === 'Cancelled' ? 'disabled' : ''}>Reschedule</button>
+            <button type="button" class="small danger" data-action="cancel" ${a.status === 'Cancelled' ? 'disabled' : ''}>Cancel</button>
+          </td>
+        </tr>`).join('');
+      document.getElementById('empty').hidden = rows.length > 0;
+    }
+
+    function find(id) {
+      return loadDb().appointments.find((a) => a.id === id);
+    }
+
+    function update(id, patch) {
+      const db = loadDb();
+      Object.assign(db.appointments.find((a) => a.id === id), patch);
+      saveDb(db);
+    }
+
+    tbody.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      selectedId = Number(btn.closest('tr').dataset.id);
+      const a = find(selectedId);
+      if (btn.dataset.action === 'checkin') openCheckin(a);
+      if (btn.dataset.action === 'reschedule') openReschedule(a);
+      if (btn.dataset.action === 'cancel') openCancel(a);
+    });
+
+    // --- check-in ---
+    const ciDialog = document.getElementById('checkin-dialog');
+    function openCheckin(a) {
+      document.getElementById('ci-patient').textContent = a.patient;
+      document.getElementById('ci-dob').textContent = a.dob;
+      document.getElementById('ci-doctor').textContent = a.doctor;
+      document.getElementById('ci-time').textContent = a.time;
+      document.getElementById('ci-insurance').value = '';
+      document.getElementById('ci-consent').checked = false;
+      document.getElementById('ci-error').hidden = true;
+      ciDialog.showModal();
+    }
+    document.getElementById('ci-close').addEventListener('click', () => ciDialog.close());
+    document.getElementById('checkin-form').addEventListener('submit', (e) => {
+      const insurance = document.getElementById('ci-insurance').value;
+      const consent = document.getElementById('ci-consent').checked;
+      const err = document.getElementById('ci-error');
+      const problems = [];
+      if (!insurance) problems.push('Select an insurance type.');
+      if (!consent) problems.push('The consent form must be signed.');
+      if (problems.length) {
+        e.preventDefault();
+        err.textContent = problems.join(' ');
+        err.hidden = false;
+        return;
+      }
+      const a = find(selectedId);
+      update(selectedId, { status: 'Checked in', insurance });
+      render();
+      toast(`${a.patient} checked in`);
+    });
+
+    // --- reschedule ---
+    const rsDialog = document.getElementById('reschedule-dialog');
+    function openReschedule(a) {
+      document.getElementById('rs-patient').textContent = `${a.patient}, currently at ${a.time}`;
+      document.getElementById('rs-time').value = '';
+      document.getElementById('rs-error').hidden = true;
+      rsDialog.showModal();
+    }
+    document.getElementById('rs-close').addEventListener('click', () => rsDialog.close());
+    document.getElementById('reschedule-form').addEventListener('submit', (e) => {
+      const time = document.getElementById('rs-time').value;
+      if (!time) {
+        e.preventDefault();
+        document.getElementById('rs-error').hidden = false;
+        return;
+      }
+      const a = find(selectedId);
+      update(selectedId, { time });
+      render();
+      toast(`${a.patient} rescheduled to ${time}`);
+    });
+
+    // --- cancel ---
+    const cxDialog = document.getElementById('cancel-dialog');
+    function openCancel(a) {
+      document.getElementById('cx-text').textContent = `Cancel the ${a.time} appointment for ${a.patient}?`;
+      cxDialog.showModal();
+    }
+    document.getElementById('cx-keep').addEventListener('click', () => cxDialog.close());
+    document.getElementById('cancel-form').addEventListener('submit', () => {
+      const a = find(selectedId);
+      // PLANTED BUG (on purpose, for the test demo): the status is never updated.
+      // Fix: update(selectedId, { status: 'Cancelled' });
+      render();
+      toast(`Appointment for ${a.patient} cancelled`);
+    });
+
+    search.addEventListener('input', render);
+    statusFilter.addEventListener('change', render);
+    document.getElementById('refresh').addEventListener('click', () => {
+      render();
+      toast('Worklist refreshed');
+    });
+
+    if (user) render();
+  </script>
+</body>
+</html>

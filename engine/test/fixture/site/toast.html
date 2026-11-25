@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deferrals – St. Luke Clinic</title>
+  <!-- A short-lived success message shown right after a click while the page reloads its data in the background (4 s),
+       like a "Deferral expired successfully" message: a check that follows must look before the message is gone. -->
+  <style>
+    body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1c2430; background: #f4f6f8; }
+    main { max-width: 600px; margin: 24px auto; padding: 0 24px; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1c2430; color: #fff; padding: 10px 16px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deferrals</h1>
+    <p>Screening deferral, active</p>
+    <button type="button" id="expire">Expire</button>
+  </main>
+  <script>
+    document.getElementById('expire').addEventListener('click', () => {
+      fetch('limits.json?delay=4000');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.setAttribute('role', 'status');
+      toast.textContent = 'Deferral expired successfully';
+      document.body.append(toast);
+      setTimeout(() => toast.remove(), 2000);
+    });
+  </script>
+</body>
+</html>

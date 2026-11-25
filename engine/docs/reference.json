@@ -1,0 +1,399 @@
+{
+  "schemaVersion": 1,
+  "title": "Intent Engine reference",
+  "summary": "Commands, flags, environment variables, app configuration and test-file modifiers of @sorsix/intent-engine. Run every command from the consumer workspace; apps default to ./intent-tests/<app>.",
+  "sections": [
+    {
+      "id": "commands",
+      "title": "Commands",
+      "intro": "intent-engine and intent-test are the same program. Every command needs Node 22.18 or later.",
+      "groups": [
+        {
+          "title": "Commands",
+          "columns": [
+            { "key": "name", "label": "Command", "code": true },
+            { "key": "usage", "label": "Usage", "code": true },
+            { "key": "description", "label": "What it does" }
+          ],
+          "rows": [
+            { "name": "run", "usage": "intent-engine run --app <app> [flags] [Playwright flags]", "description": "Runs the app's tests in two passes (parallel, then @exclusive with one worker) and reports to the dashboard. Reporting is required." },
+            { "name": "parse", "usage": "intent-engine parse --app <app> [file-or-folder]", "description": "Checks test files, seeds and parameter sets without a browser or model. The optional path narrows the check and overrides AT_TESTS." },
+            { "name": "parse-all", "usage": "intent-engine parse-all", "description": "Runs parse for every app folder in AT_APPS_DIR; fails if any app fails." },
+            { "name": "ids", "usage": "intent-engine ids [--write] <file-or-folder>...", "description": "Lists the tests that have no id: line. With --write, adds one under each heading (a slug of the test title, unique across the paths). Reads the files as text, so it works on suites the parser rejects." },
+            { "name": "catalog", "usage": "intent-engine catalog [--app <app>]", "description": "With an app, prints its suite catalog JSON (profiles, base URL, identity, cases). Without one, lists the apps." },
+            { "name": "develop", "usage": "intent-engine develop --app <app> [--headed]", "description": "Develop mode's engine session for Intent Launcher: keeps one browser open and takes newline-delimited JSON requests on stdin (load a case, start, run or verify a step, edit and save, screencast, record), answering on stdout. Starts the app config's webServer when BASE_URL is empty. Needs no dashboard token and does not report." },
+            { "name": "progress", "usage": "intent-engine progress [--app <app>] [seconds]", "description": "Prints run progress every N seconds (default 30) until the run finishes." },
+            { "name": "login", "usage": "intent-engine login [--no-open]", "description": "Validates a token for the configured dashboard (AT_DASHBOARD_URL or intent-workspace.json) and prints it on stdout. Opens the dashboard to create one unless --no-open is given." },
+            { "name": "publish-suite", "usage": "intent-engine publish-suite --app <app>", "description": "Uploads the app's suite catalog to the dashboard without running tests." },
+            { "name": "replay", "usage": "intent-engine replay <spool-directory>", "description": "Re-uploads a run or suite whose upload is still pending. It does not re-run tests." },
+            { "name": "serve", "usage": "intent-engine serve [folder]", "description": "Serves a folder on 127.0.0.1 (PORT, default 4173). A reports folder serves report.html at /." },
+            { "name": "help", "usage": "intent-engine help | --help | -h", "description": "Prints usage." },
+            { "name": "--version", "usage": "intent-engine --version | -v", "description": "Prints the engine version." }
+          ]
+        },
+        {
+          "title": "run flags",
+          "intro": "Arguments the engine does not recognise are passed to Playwright for both passes.",
+          "columns": [
+            { "key": "name", "label": "Flag", "code": true },
+            { "key": "value", "label": "Value" },
+            { "key": "default", "label": "Default" },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "--app <name>", "value": "App folder name", "default": "AT_APP", "description": "Selects <AT_APPS_DIR>/<name>. Accepted by every app-scoped command." },
+            { "name": "--case-id <id>", "value": "Durable case ID, repeatable", "default": "All cases", "description": "Runs only these case IDs (the case: prefix is optional; <id>[<row key>] picks one parameter row). Replaces AT_CASE_IDS." },
+            { "name": "--project <phase>", "value": "parallel | exclusive, repeatable", "default": "Both", "description": "Runs only the named pass." },
+            { "name": "--allow-outdated", "value": "Flag", "default": "Off", "description": "Runs an engine older than the dashboard's minimum version; the run is marked outdated. Same as INTENT_ALLOW_OUTDATED." },
+            { "name": "--purpose <purpose>", "value": "verification | authoring", "default": "AT_RUN_PURPOSE → config purpose → the dashboard decides", "description": "Declares what the run is for. Without it the dashboard records runs by an automation token as verification and every other run as authoring; a declared purpose overrides that. Statistics default to verification runs." },
+            { "name": "--list", "value": "Flag", "default": "Off", "description": "Lists the tests of each pass. Needs no token and runs nothing." },
+            { "name": "--workers=N", "value": "Integer", "default": "AT_WORKERS → config workers → 2", "description": "Workers for the parallel pass. The exclusive pass always uses one." },
+            { "name": "-g, --headed, --trace on, --grep-invert, --repeat-each, …", "value": "Playwright flags", "default": "Playwright's", "description": "Passed through to Playwright. Retries are 0 unless --retries is given." }
+          ]
+        },
+        {
+          "title": "Other command flags",
+          "columns": [
+            { "key": "name", "label": "Flag", "code": true },
+            { "key": "command", "label": "Command", "code": true },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "--no-open", "command": "login", "description": "Does not open the dashboard's token page in a browser." },
+            { "name": "--headed", "command": "develop", "description": "Also opens a visible browser window; the screencast keeps working." },
+            { "name": "?delay=<ms>", "command": "serve", "description": "Query parameter that delays a response by up to 10000 ms." }
+          ]
+        },
+        {
+          "title": "Exit codes",
+          "columns": [
+            { "key": "name", "label": "Command", "code": true },
+            { "key": "codes", "label": "Codes" }
+          ],
+          "rows": [
+            { "name": "run", "codes": "0 all passed and uploaded · 1 a test or pass failed, listing failed or the upload is pending · 130 cancelled (Ctrl-C / SIGTERM)" },
+            { "name": "parse, parse-all", "codes": "0 valid · 1 a parse error or no app selected" },
+            { "name": "ids", "codes": "0 every test has an id, or --write added them · 1 ids are missing and --write was not given · 2 invalid arguments or no test files" },
+            { "name": "replay", "codes": "0 upload complete · 1 still pending or failed" },
+            { "name": "publish-suite", "codes": "0 uploaded · 1 the upload is pending · non-zero on invalid arguments or authentication" },
+            { "name": "catalog, login", "codes": "0 success · 1 error or unknown argument" },
+            { "name": "develop", "codes": "0 after stdin closes, SIGINT or SIGTERM (the browser is closed first) · 1 no app selected · 2 unknown argument" },
+            { "name": "Any command", "codes": "1 on Node older than 22.18 or an unknown command" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "selection",
+      "title": "App selection and scope",
+      "intro": "Values can come from the shell or from .env files; see Precedence.",
+      "groups": [
+        {
+          "title": "Variables",
+          "columns": [
+            { "key": "name", "label": "Variable", "code": true },
+            { "key": "value", "label": "Value" },
+            { "key": "default", "label": "Default" },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "AT_APPS_DIR", "value": "Path", "default": "./intent-tests, else the nearest folder with intent-workspace.json", "description": "Folder that contains the app folders." },
+            { "name": "AT_APP", "value": "App folder name", "default": "—", "description": "Selects <AT_APPS_DIR>/<name>; set by --app." },
+            { "name": "AT_APP_DIR", "value": "Path", "default": "—", "description": "Uses an app folder anywhere on disk. Wins over AT_APP; the shared .env is then not loaded." },
+            { "name": "AT_ENV", "value": "Profile name", "default": "dev", "description": "Loads <app>/.env.<AT_ENV>. Naming a profile without a file is an error." },
+            { "name": "AT_TESTS", "value": "Path inside the app", "default": "Whole app", "description": "Runs one file or subfolder. The whole app is still parsed." },
+            { "name": "AT_CASE_IDS", "value": "IDs, comma or space separated", "default": "All", "description": "Runs exact durable case IDs. Unknown IDs are a parse error." },
+            { "name": "AT_PARAMS", "value": "first, or row keys", "default": "All rows", "description": "Keeps a subset of every parameter set's rows. Unknown keys are a parse error." },
+            { "name": "AT_INCLUDE_DRAFTS", "value": "true", "default": "false", "description": "Runs cases tagged @draft too. Without it, run, --list and dashboard discovery leave drafts out; catalog and publish-suite always list them (draft: true)." },
+            { "name": "AT_REPORT_DIR", "value": "Path", "default": "<app>/reports", "description": "Base folder for reports, progress and decision logs." },
+            { "name": "BASE_URL", "value": "URL", "default": "Required unless config webServer", "description": "The application under test." },
+            { "name": "IGNORE_HTTPS_ERRORS", "value": "true", "default": "false", "description": "Accepts self-signed certificates in the browser and in seed requests." },
+            { "name": "PORT", "value": "Number", "default": "4173", "description": "Port of the serve command." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "browser",
+      "title": "Browser and timing",
+      "intro": "Each value falls back to the app configuration, then to the engine default.",
+      "groups": [
+        {
+          "title": "Variables",
+          "columns": [
+            { "key": "name", "label": "Variable", "code": true },
+            { "key": "value", "label": "Value" },
+            { "key": "default", "label": "Default" },
+            { "key": "config", "label": "Config key", "code": true },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "AT_WORKERS", "value": "Integer", "default": "2", "config": "workers", "description": "Parallel workers; --workers wins." },
+            { "name": "VIEWPORT", "value": "WIDTHxHEIGHT", "default": "1280x720", "config": "viewport", "description": "Browser size. A value in another format is ignored." },
+            { "name": "TIMEZONE", "value": "IANA zone", "default": "The machine's", "config": "timezone", "description": "Browser and seed time zone." },
+            { "name": "PW_VIDEO", "value": "on", "default": "Off", "config": "", "description": "Records a video of every test." },
+            { "name": "AT_TEST_TIMEOUT_MS", "value": "Milliseconds", "default": "90000", "config": "testTimeoutMs", "description": "Time for one whole test." },
+            { "name": "AT_RESOLVE_TIMEOUT_MS", "value": "Milliseconds", "default": "3000", "config": "resolveTimeoutMs", "description": "How long optional steps and plain expect steps keep looking." },
+            { "name": "AT_REQUIRED_RESOLVE_TIMEOUT_MS", "value": "Milliseconds", "default": "10000", "config": "requiredResolveTimeoutMs", "description": "How long required steps keep looking." },
+            { "name": "AT_SETTLE_MS", "value": "Milliseconds", "default": "250", "config": "settleMs", "description": "Pause after each action." },
+            { "name": "AT_MIN_LOOKS", "value": "Integer", "default": "3", "config": "", "description": "Page looks before a step may fail." },
+            { "name": "AT_POLL_INTERVAL_MS", "value": "Milliseconds", "default": "500", "config": "", "description": "Delay between looks." },
+            { "name": "AT_MAX_REQUEST_CHARS", "value": "Integer", "default": "80000", "config": "", "description": "Above this size a model request uses compact page descriptions." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "decider",
+      "title": "Decision model",
+      "intro": "Pick a preset with AT_DECIDER or the config's decider; override any part with the AT_DECIDER_* variables. API keys only ever come from the environment.",
+      "groups": [
+        {
+          "title": "Variables",
+          "columns": [
+            { "key": "name", "label": "Variable", "code": true },
+            { "key": "value", "label": "Value" },
+            { "key": "default", "label": "Default" },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "AT_DECIDER", "value": "Preset name", "default": "config decider → jev", "description": "Decision-model preset. Unknown names are an error." },
+            { "name": "AT_DECIDER_URL", "value": "URL; ${VAR} filled from env", "default": "Preset", "description": "Overrides the endpoint. A missing ${VAR} is an error." },
+            { "name": "AT_DECIDER_API_KEY", "value": "Secret", "default": "Preset key variable", "description": "Overrides the API key.", "tags": ["secret"] },
+            { "name": "AT_DECIDER_MODEL", "value": "Model id", "default": "Preset", "description": "Overrides the model id." },
+            { "name": "AT_DECIDER_MAX_OPTIONS", "value": "Integer", "default": "255", "description": "Options per choice question." },
+            { "name": "AT_DECIDER_USD_PER_M_INPUT", "value": "Number", "default": "Preset", "description": "Price per million input tokens for cost estimates." },
+            { "name": "AT_DECIDER_IMAGES", "value": "true | always, fallback, false", "default": "Preset", "description": "Whether requests include screenshots: always, only after an unsure answer, or never." },
+            { "name": "AT_CHOICE_THRESHOLD", "value": "0–1", "default": "config choiceThreshold → preset", "description": "Confidence needed to act on an element." },
+            { "name": "AT_YESNO_THRESHOLD", "value": "0–1", "default": "config yesNoThreshold → preset", "description": "Yes probability needed for expect steps and conditions." }
+          ]
+        },
+        {
+          "title": "Presets",
+          "columns": [
+            { "key": "name", "label": "Preset", "code": true },
+            { "key": "description", "label": "Backend" },
+            { "key": "key", "label": "Key variable", "code": true },
+            { "key": "images", "label": "Images" },
+            { "key": "thresholds", "label": "Choice / yes-no" }
+          ],
+          "rows": [
+            { "name": "jev", "description": "TypeSafe Jev (api.typesafe.ai), model jev-latest. Default.", "key": "TYPESAFE_API_KEY", "images": "fallback", "thresholds": "0.8 / 0.8" },
+            { "name": "openai", "description": "OpenAI Decisions API, gpt-6-luna.", "key": "OPENAI_API_KEY", "images": "fallback", "thresholds": "0.6 / 0.6" },
+            { "name": "microsoft", "description": "Microsoft-Decision-1 on Microsoft Foundry; set MICROSOFT_FOUNDRY_ENDPOINT.", "key": "MICROSOFT_FOUNDRY_KEY", "images": "false", "thresholds": "0.8 / 0.8" },
+            { "name": "d3-ultra", "description": "vllm-sr Decision 3.0 d3-ultra.", "key": "VLLM_SR_API_KEY", "images": "fallback", "thresholds": "0.8 / 0.8" },
+            { "name": "clef", "description": "Cloudflare Workers AI, Clef; set CLOUDFLARE_ACCOUNT_ID.", "key": "CLOUDFLARE_API_TOKEN", "images": "false", "thresholds": "0.8 / 0.8" },
+            { "name": "clef-flash", "description": "Cloudflare Workers AI, Clef-flash; set CLOUDFLARE_ACCOUNT_ID.", "key": "CLOUDFLARE_API_TOKEN", "images": "false", "thresholds": "0.8 / 0.7" },
+            { "name": "llamacpp", "description": "A local llama.cpp server you started yourself.", "key": "", "images": "false", "thresholds": "0.8 / 0.8" },
+            { "name": "stub", "description": "Deterministic offline decider for the engine's self-tests.", "key": "", "images": "false", "thresholds": "0.8 / 0.8" }
+          ]
+        },
+        {
+          "title": "Provider variables",
+          "columns": [
+            { "key": "name", "label": "Variable", "code": true },
+            { "key": "preset", "label": "Preset", "code": true },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "TYPESAFE_API_KEY", "preset": "jev", "description": "Jev API key.", "tags": ["secret"] },
+            { "name": "OPENAI_API_KEY", "preset": "openai", "description": "OpenAI API key.", "tags": ["secret"] },
+            { "name": "MICROSOFT_FOUNDRY_KEY", "preset": "microsoft", "description": "Foundry key, sent as the api-key header.", "tags": ["secret"] },
+            { "name": "MICROSOFT_FOUNDRY_ENDPOINT", "preset": "microsoft", "description": "Foundry resource address, e.g. https://<resource>.services.ai.azure.com." },
+            { "name": "VLLM_SR_API_KEY", "preset": "d3-ultra", "description": "vllm-sr API key.", "tags": ["secret"] },
+            { "name": "CLOUDFLARE_API_TOKEN", "preset": "clef, clef-flash", "description": "Cloudflare API token.", "tags": ["secret"] },
+            { "name": "CLOUDFLARE_ACCOUNT_ID", "preset": "clef, clef-flash", "description": "Cloudflare account, filled into the endpoint." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sessions",
+      "title": "Sessions, data and debugging",
+      "groups": [
+        {
+          "title": "Variables",
+          "columns": [
+            { "key": "name", "label": "Variable", "code": true },
+            { "key": "value", "label": "Value" },
+            { "key": "default", "label": "Default" },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "AT_LOGIN", "value": "ui", "default": "config auth → ui", "description": "Logs in through the session steps in the browser instead of the app's API login." },
+            { "name": "AT_ANONYMOUS_FRESH_COOKIES", "value": "false", "default": "On", "description": "Set to false to keep server cookies between non-login tests and switches." },
+            { "name": "AT_KEEP_SEED", "value": "true", "default": "false", "description": "Skips seed cleanup, to inspect seeded data." },
+            { "name": "AT_DEBUG", "value": "true", "default": "false", "description": "Failure messages list every candidate, or the page the model saw for an expect." },
+            { "name": "AT_LOG_DECISIONS", "value": "true", "default": "On for reported runs", "description": "Writes model calls to <reports>/decisions/<pid>.jsonl." },
+            { "name": "AT_NET_LOG", "value": "File path", "default": "—", "description": "Appends the app's API calls as JSON lines. May contain personal data." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reporting",
+      "title": "Dashboard reporting",
+      "intro": "Reporting is optional. With a dashboard URL (AT_DASHBOARD_URL or \"dashboard\" in intent-workspace.json), run reports there and fails without a token: CI needs an automation token; locally use a personal token from intent-engine login. Runs report into a product that must exist on the dashboard; applications register themselves on their first run. Without a URL, token or product, a run keeps its reports local; a token or product without a URL stops the run.",
+      "groups": [
+        {
+          "title": "Variables",
+          "columns": [
+            { "key": "name", "label": "Variable", "code": true },
+            { "key": "default", "label": "Default" },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "AT_DASHBOARD_URL", "default": "intent-workspace.json \"dashboard\"; none: local reports only", "description": "Dashboard the run reports to, e.g. https://dashboard.example.com. Overrides the workspace file." },
+            { "name": "AT_DASHBOARD_TOKEN", "default": "Required when reporting (run, publish-suite, replay)", "description": "Dashboard access token with Upload test results.", "tags": ["secret"] },
+            { "name": "INTENT_ALLOW_OUTDATED", "default": "Off", "description": "1, true or yes: same as --allow-outdated." },
+            { "name": "AT_RUN_PURPOSE", "default": "The dashboard decides", "description": "verification or authoring: same as --purpose; also settable as purpose in intent-tests.config.ts." },
+            { "name": "AT_LAUNCHER_INSTALLATION_ID", "default": "Unset", "description": "Set by the Launcher desktop app: its installation UUID, recorded on the run. Not for manual use." },
+            { "name": "AT_RUN_NAME", "default": "<App> intent suite", "description": "Run display name." },
+            { "name": "AT_DASHBOARD_PRODUCT_KEY", "default": "intent-workspace.json (required)", "description": "Product the run reports into; overrides intent-workspace.json. The product must already exist on the dashboard." },
+            { "name": "AT_DASHBOARD_APP_KEY", "default": "The app folder name", "description": "Application the run belongs to." },
+            { "name": "AT_DASHBOARD_APP_NAME", "default": "The app key", "description": "Application display name used when the application is new." },
+            { "name": "AT_DASHBOARD_SUITE_REVISION", "default": "—", "description": "Label for the suite snapshot; does not change its hash." },
+            { "name": "AT_DASHBOARD_ENVIRONMENT", "default": "AT_ENV → dev", "description": "Environment label on the run." },
+            { "name": "AT_DASHBOARD_BRANCH", "default": "GITHUB_REF_NAME → CI_COMMIT_REF_NAME → current Git branch → local", "description": "Branch on the run." },
+            { "name": "AT_DASHBOARD_COMMIT_SHA", "default": "GITHUB_SHA → CI_COMMIT_SHA → Git HEAD", "description": "Commit on the run." },
+            { "name": "AT_DASHBOARD_TRIGGERED_BY", "default": "CI when CI is set, else USER", "description": "Who started the run." },
+            { "name": "AT_ENVIRONMENT_BUILD_ID", "default": "Discovered from the app's /.well-known/intent-launch/environment", "description": "Links the run to an Intent Launcher environment version; Launcher sets it." },
+            { "name": "CI", "default": "Unset", "description": "When set, an automation token is required and runs are labelled CI." },
+            { "name": "GITHUB_REF_NAME, CI_COMMIT_REF_NAME, GITHUB_SHA, CI_COMMIT_SHA, USER", "default": "From CI or the OS", "description": "Fallbacks for branch, commit and triggered-by." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "config",
+      "title": "App configuration",
+      "intro": "Optional <app>/intent-tests.config.ts exporting default defineConfig({ … }) from @sorsix/intent-engine. Environment variables override these keys.",
+      "groups": [
+        {
+          "title": "intent-tests.config.ts",
+          "columns": [
+            { "key": "name", "label": "Key", "code": true },
+            { "key": "type", "label": "Type", "code": true },
+            { "key": "default", "label": "Default" },
+            { "key": "env", "label": "Overridden by", "code": true },
+            { "key": "description", "label": "Description" }
+          ],
+          "rows": [
+            { "name": "auth", "type": "'ui' | { login, homePath }", "default": "'ui'", "env": "AT_LOGIN=ui", "description": "How sessions log in: your app's API login (an AuthHook), or the session block's steps in the browser." },
+            { "name": "decider", "type": "string", "default": "'jev'", "env": "AT_DECIDER", "description": "Decision-model preset." },
+            { "name": "presets", "type": "Record<string, Preset>", "default": "—", "env": "", "description": "The app's own decision-model presets, added to the built-in ones (same name: the app's wins). Keys still come from the environment." },
+            { "name": "choiceThreshold", "type": "number", "default": "Preset", "env": "AT_CHOICE_THRESHOLD", "description": "Confidence needed to act on an element." },
+            { "name": "yesNoThreshold", "type": "number", "default": "Preset", "env": "AT_YESNO_THRESHOLD", "description": "Yes probability needed for an expect." },
+            { "name": "viewport", "type": "{ width, height }", "default": "1280×720", "env": "VIEWPORT", "description": "Browser size." },
+            { "name": "timezone", "type": "string", "default": "The machine's", "env": "TIMEZONE", "description": "Browser and seed time zone." },
+            { "name": "purpose", "type": "'verification' | 'authoring'", "default": "The dashboard decides", "env": "AT_RUN_PURPOSE, --purpose", "description": "What the app's runs are for." },
+            { "name": "workers", "type": "number", "default": "2", "env": "AT_WORKERS", "description": "Parallel tests." },
+            { "name": "testTimeoutMs", "type": "number", "default": "90000", "env": "AT_TEST_TIMEOUT_MS", "description": "Time per whole test." },
+            { "name": "resolveTimeoutMs", "type": "number", "default": "3000", "env": "AT_RESOLVE_TIMEOUT_MS", "description": "Look time for optional steps and plain expect." },
+            { "name": "requiredResolveTimeoutMs", "type": "number", "default": "10000", "env": "AT_REQUIRED_RESOLVE_TIMEOUT_MS", "description": "Look time for required steps." },
+            { "name": "settleMs", "type": "number", "default": "250", "env": "AT_SETTLE_MS", "description": "Pause after each action." },
+            { "name": "webServer", "type": "{ command, url, env? }", "default": "—", "env": "BASE_URL", "description": "Server started when BASE_URL is empty." }
+          ]
+        },
+        {
+          "title": "Other app files",
+          "columns": [
+            { "key": "name", "label": "File", "code": true },
+            { "key": "description", "label": "Contents" }
+          ],
+          "rows": [
+            { "name": "intent-workspace.json", "description": "Committed { \"product\": \"<key>\", \"dashboard\": \"<url>\" }: the dashboard and product these apps report into (omit both for local-only runs). Put it in the apps folder (e.g. intent-tests/); it also lets the engine run from inside that folder. An app folder may have its own." },
+            { "name": "parameters.ts", "description": "export const parameters: named sets of rows ({ description?, rows(), key?(row) }). Values are strings, numbers or booleans; row keys are unique, at most 120 characters." },
+            { "name": "seeds.ts", "description": "export const seeds: named { description?, run(ctx) } returning { vars, cleanup? }. ctx gives baseURL, testId, params, newRequest(), login() and log()." },
+            { "name": ".env, .env.<profile>", "description": "Loaded in order: <AT_APPS_DIR>/.env, <app>/.env, <app>/.env.<AT_ENV>. A value already set is never overwritten." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "modifiers",
+      "title": "Test-file modifiers",
+      "intro": "Metadata lines and step modifiers in the Markdown tests. The full grammar is in the engine's docs/test-format.md.",
+      "groups": [
+        {
+          "title": "Test metadata",
+          "columns": [
+            { "key": "name", "label": "Line", "code": true },
+            { "key": "description", "label": "Meaning" }
+          ],
+          "rows": [
+            { "name": "id: <id>", "description": "Durable case ID (letters, digits, . _ -, up to 200 characters), unique in the app." },
+            { "name": "session: <block>", "description": "Starts the test logged in as that ## Steps: block." },
+            { "name": "seed: <name>", "description": "Runs the seed first; its values become {{seed.*}}." },
+            { "name": "parameters: <set>", "description": "Expands the test into one case per parameter row." },
+            { "name": "tags: @a @b", "description": "Playwright tags (the @ is optional)." },
+            { "name": "refs: <ref>, <ref>", "description": "References to other systems, e.g. TestRail case ids: up to 20, each 1-50 letters, digits or . _ : / -. Listed in the catalog; not part of the case version." },
+            { "name": "@exclusive", "description": "Runs alone in the second pass." },
+            { "name": "@expect-fail", "description": "Reported as expected when the test fails." },
+            { "name": "@draft", "description": "Work in progress: left out of run unless AT_INCLUDE_DRAFTS=true (a draft without steps always); listed in the catalog as a draft. The only test that may have no steps yet." }
+          ]
+        },
+        {
+          "title": "Step modifiers and variables",
+          "columns": [
+            { "key": "name", "label": "Form", "code": true },
+            { "key": "description", "label": "Meaning" }
+          ],
+          "rows": [
+            { "name": "optionally <step>", "description": "Skips a click, fill, select, check or uncheck when nothing matches." },
+            { "name": "…, only if <condition>", "description": "Checks a yes/no condition first and skips the optional step if it doesn't hold." },
+            { "name": "expect … within N seconds", "description": "Keeps checking for up to N seconds." },
+            { "name": "expect <thing> is not shown", "description": "Checks that something is absent (also is not visible, displayed, listed): asks whether it is shown and passes on a confident no on several looks in a row. Only this single-clause form." },
+            { "name": "select \"*\" in …", "description": "Picks the first real option." },
+            { "name": "call … and save \"<field>\" as \"<name>\"", "description": "Saves a response field as {{saved.<name>}}." },
+            { "name": "{{NAME}}", "description": "An environment variable, filled in when the file is parsed. A missing one is a parse error." },
+            { "name": "{{param.k}}, {{seed.k}}, {{saved.n}}", "description": "Parameter row value, seed value, saved response value." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "precedence",
+      "title": "Precedence",
+      "groups": [
+        {
+          "title": "Which value wins",
+          "items": [
+            "Shell environment, then <AT_APPS_DIR>/.env, then <app>/.env, then <app>/.env.<AT_ENV>: a file never overwrites a value that is already set.",
+            "Environment variable, then intent-tests.config.ts, then the preset or engine default.",
+            "Workers: --workers, then AT_WORKERS, then config workers, then 2. The exclusive pass always uses one.",
+            "App: AT_APP_DIR, then AT_APP (--app sets AT_APP).",
+            "Dashboard: AT_DASHBOARD_URL, then \"dashboard\" in intent-workspace.json; with neither, the run keeps its reports local, unless a token or product is set, which stops it.",
+            "Product: AT_DASHBOARD_PRODUCT_KEY, then intent-workspace.json in the app folder, then in the folder containing it; a reporting run without either stops and names the file to create.",
+            "Scope: a parse path beats AT_TESTS; --case-id replaces AT_CASE_IDS.",
+            "Run purpose: --purpose, then AT_RUN_PURPOSE, then config purpose; without any, the dashboard derives it from the reporter.",
+            "Run name: AT_RUN_NAME, then \"<App> intent suite\".",
+            "Login: AT_LOGIN=ui, then config auth, then ui (the session steps in the browser).",
+            "Base URL: BASE_URL, then config webServer.url; with neither, the run stops.",
+            "Environment version: AT_ENVIRONMENT_BUILD_ID, then discovery from the app."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "internal",
+      "title": "Internal",
+      "intro": "Set by the engine for its own child processes. Do not set them yourself.",
+      "groups": [
+        {
+          "title": "Internal",
+          "columns": [
+            { "key": "name", "label": "Variable", "code": true },
+            { "key": "description", "label": "Purpose" }
+          ],
+          "rows": [
+            { "name": "AT_DASHBOARD_PHASE", "description": "Current pass (parallel or exclusive).", "tags": ["internal"] },
+            { "name": "AT_DASHBOARD_SPOOL_DIR", "description": "Upload spool of the running pass; also proves Playwright was started by run.", "tags": ["internal"] },
+            { "name": "AT_DASHBOARD_DISCOVERY_DIR", "description": "Where the list pass writes each phase's test plan.", "tags": ["internal"] },
+            { "name": "TEST_WORKER_INDEX", "description": "Set by Playwright; warnings print once, in the main process.", "tags": ["internal"] }
+          ]
+        }
+      ]
+    }
+  ]
+}

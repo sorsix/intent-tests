@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Triage queue – St. Luke Clinic</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js"></script>
+</head>
+<body>
+  <header class="app-header"></header>
+  <main>
+    <h1>Triage queue</h1>
+    <!-- An ARIA switch with no input inside, labelled like a Material slide toggle (<button role="switch"> + <label for>),
+         for the check/uncheck self-test. -->
+    <div class="field inline">
+      <button type="button" role="switch" aria-checked="false" id="urgent-only" aria-labelledby="urgent-only-label"><span class="switch-handle" aria-hidden="true"></span></button>
+      <label for="urgent-only" id="urgent-only-label">Urgent patients only</label>
+      <span id="urgent-state">Showing all patients</span>
+    </div>
+    <div class="field inline">
+      <button type="button" class="secondary" id="assign-ward">Assign ward</button>
+      <span id="ward-state">No ward assigned</span>
+    </div>
+    <!-- Text a web component renders in an open shadow root (innerText of the page leaves it out), like a compiled
+         summary template or a status chip in a grid cell, for the shadow-text self-test. -->
+    <triage-summary></triage-summary>
+    <!-- A read-only field and a field with both a label and a placeholder, for the field-label self-test. -->
+    <div class="field inline">
+      <label for="bed">Bed</label>
+      <input type="text" id="bed" value="B-12" disabled>
+      <label for="ward-code">Ward code</label>
+      <input type="text" id="ward-code" placeholder="e.g. CAR-3">
+    </div>
+    <section class="panel">
+      <table id="queue">
+        <caption>Checked-in patients waiting for triage</caption>
+        <thead>
+          <tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Insurance</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="queue-empty" class="empty" hidden>No patients are waiting for triage.</div>
+    </section>
+    <section class="panel" style="margin-top: 20px">
+      <table id="done">
+        <caption>Triaged today</caption>
+        <thead>
+          <tr><th>Patient</th><th>Blood pressure</th><th>Pulse</th><th>Temperature</th><th>Status</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="done-empty" class="empty" hidden>Nobody has been triaged yet.</div>
+    </section>
+  </main>
+
+  <dialog id="vitals-dialog" aria-labelledby="vitals-title">
+    <form method="dialog" id="vitals-form" novalidate>
+      <h2 id="vitals-title">Record vitals</h2>
+      <div id="v-error" class="alert" role="alert" hidden>All vitals are required.</div>
+      <div class="field">
+        <label for="v-bp">Blood pressure (mmHg)</label>
+        <input type="text" id="v-bp" placeholder="120/80">
+      </div>
+      <div class="field">
+        <label for="v-pulse">Pulse (bpm)</label>
+        <input type="number" id="v-pulse">
+      </div>
+      <div class="field">
+        <label for="v-temp">Temperature (°C)</label>
+        <input type="number" id="v-temp" step="0.1">
+      </div>
+      <div class="buttons">
+        <button type="button" class="secondary" id="v-close">Close</button>
+        <button type="submit">Save vitals</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- A modal like Angular Material's (role="dialog" + aria-modal, not a native <dialog>) with an autocomplete whose
+       suggestions render in an overlay after it, outside the dialog, as the CDK overlay does (e.g. a postcode search). -->
+  <div id="ward-dialog" class="modal" role="dialog" aria-modal="true" aria-labelledby="ward-title" hidden>
+    <h2 id="ward-title">Assign ward</h2>
+    <div class="field">
+      <label for="ward-search">Ward</label>
+      <input type="text" id="ward-search" role="combobox" aria-autocomplete="list" aria-controls="ward-options" aria-expanded="false" autocomplete="off">
+    </div>
+    <div class="buttons">
+      <button type="button" class="secondary" id="ward-cancel">Cancel</button>
+      <button type="button" id="ward-save">Save ward</button>
+    </div>
+  </div>
+  <div id="ward-overlay" class="cdk-overlay-pane" hidden>
+    <div role="listbox" id="ward-options"></div>
+  </div>
+
+  <script>
+    const user = requireRole('nurse');
+    if (user) renderHeader(user, 'triage.html');
+
+    const dialog = document.getElementById('vitals-dialog');
+    let selectedId = null;
+
+    function render() {
+      const db = loadDb();
+      const waiting = db.appointments.filter((a) => a.status === 'Checked in');
+      const triaged = db.appointments.filter((a) => a.status === 'Triaged');
+      document.querySelector('#queue tbody').innerHTML = waiting.map((a) => `
+        <tr data-id="${a.id}">
+          <td>${escapeHtml(a.time)}</td>
+          <td>${escapeHtml(a.patient)}</td>
+          <td>${escapeHtml(a.doctor)}</td>
+          <td>${escapeHtml(a.insurance || '—')}</td>
+          <td class="actions"><button type="button" class="small">Record vitals</button></td>
+        </tr>`).join('');
+      document.querySelector('#done tbody').innerHTML = triaged.map((a) => `
+        <tr>
+          <td>${escapeHtml(a.patient)}</td>
+          <td>${escapeHtml(a.vitals.bp)}</td>
+          <td>${escapeHtml(a.vitals.pulse)} bpm</td>
+          <td>${escapeHtml(a.vitals.temp)} °C</td>
+          <td>${statusBadge(a.status)}</td>
+        </tr>`).join('');
+      document.getElementById('queue-empty').hidden = waiting.length > 0;
+      document.getElementById('done-empty').hidden = triaged.length > 0;
+    }
+
+    document.querySelector('#queue tbody').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      selectedId = Number(btn.closest('tr').dataset.id);
+      const a = loadDb().appointments.find((x) => x.id === selectedId);
+      document.getElementById('vitals-title').textContent = `Record vitals for ${a.patient}`;
+      for (const id of ['v-bp', 'v-pulse', 'v-temp']) document.getElementById(id).value = '';
+      document.getElementById('v-error').hidden = true;
+      dialog.showModal();
+    });
+
+    document.getElementById('urgent-only').addEventListener('click', (e) => {
+      const on = e.currentTarget.getAttribute('aria-checked') !== 'true';
+      e.currentTarget.setAttribute('aria-checked', String(on));
+      document.getElementById('urgent-state').textContent = on ? 'Showing urgent patients only' : 'Showing all patients';
+    });
+
+    const wardDialog = document.getElementById('ward-dialog');
+    const wardSearch = document.getElementById('ward-search');
+    const wardOverlay = document.getElementById('ward-overlay');
+    const WARDS = ['Ward 1 - General', 'Ward 2 - Paediatrics', 'Ward 3 - Cardiology', 'Ward 4 - Orthopaedics'];
+    document.getElementById('assign-ward').addEventListener('click', () => {
+      wardSearch.value = '';
+      wardDialog.hidden = false;
+      wardSearch.focus();
+    });
+    wardSearch.addEventListener('input', () => {
+      const q = wardSearch.value.trim().toLowerCase();
+      const matches = q ? WARDS.filter((w) => w.toLowerCase().includes(q)) : [];
+      document.getElementById('ward-options').innerHTML = matches
+        .map((w) => `<div role="option" tabindex="-1" class="option">${escapeHtml(w)}</div>`).join('');
+      wardOverlay.hidden = matches.length === 0;
+      wardSearch.setAttribute('aria-expanded', String(matches.length > 0));
+    });
+    document.getElementById('ward-options').addEventListener('click', (e) => {
+      const option = e.target.closest('[role="option"]');
+      if (!option) return;
+      wardSearch.value = option.textContent;
+      wardOverlay.hidden = true;
+      wardSearch.setAttribute('aria-expanded', 'false');
+    });
+    document.getElementById('ward-cancel').addEventListener('click', () => { wardDialog.hidden = true; wardOverlay.hidden = true; });
+    document.getElementById('ward-save').addEventListener('click', () => {
+      if (!WARDS.includes(wardSearch.value)) return;
+      document.getElementById('ward-state').textContent = `Ward: ${wardSearch.value}`;
+      wardDialog.hidden = true;
+    });
+
+    customElements.define('triage-summary', class extends HTMLElement {
+      connectedCallback() {
+        if (this.shadowRoot) return;
+        this.attachShadow({ mode: 'open' }).innerHTML = '<style>p { margin: 12px 0; }</style><p>Triage summary: 2 patients waiting, 1 triaged today</p>';
+      }
+    });
+
+    document.getElementById('v-close').addEventListener('click', () => dialog.close());
+    document.getElementById('vitals-form').addEventListener('submit', (e) => {
+      const vitals = {
+        bp: document.getElementById('v-bp').value.trim(),
+        pulse: document.getElementById('v-pulse').value,
+        temp: document.getElementById('v-temp').value,
+      };
+      if (!vitals.bp || !vitals.pulse || !vitals.temp) {
+        e.preventDefault();
+        document.getElementById('v-error').hidden = false;
+        return;
+      }
+      const db = loadDb();
+      const a = db.appointments.find((x) => x.id === selectedId);
+      Object.assign(a, { status: 'Triaged', vitals });
+      saveDb(db);
+      render();
+      toast(`Vitals saved for ${a.patient}`);
+    });
+
+    if (user) render();
+  </script>
+</body>
+</html>

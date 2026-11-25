@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register walk-in – St. Luke Clinic</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js"></script>
+</head>
+<body>
+  <header class="app-header"></header>
+  <main>
+    <h1>Register walk-in patient</h1>
+    <form class="panel" id="register-form" novalidate>
+      <div id="form-error" class="alert" role="alert" hidden>Please fix the errors below.</div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="first-name">First name</label>
+          <input type="text" id="first-name">
+          <div class="error" id="first-name-error" hidden>First name is required.</div>
+        </div>
+        <div class="field">
+          <label for="last-name">Last name</label>
+          <input type="text" id="last-name">
+          <div class="error" id="last-name-error" hidden>Last name is required.</div>
+        </div>
+        <div class="field">
+          <label for="dob">Date of birth</label>
+          <input type="date" id="dob">
+          <div class="error" id="dob-error" hidden>Date of birth is required.</div>
+        </div>
+        <div class="field">
+          <label for="phone">Phone number</label>
+          <input type="tel" id="phone" placeholder="070 123 456">
+        </div>
+        <div class="field">
+          <label for="doctor">Doctor</label>
+          <select id="doctor">
+            <option value="">Choose a doctor…</option>
+          </select>
+          <div class="error" id="doctor-error" hidden>Choose a doctor.</div>
+        </div>
+        <div class="field">
+          <!-- A custom dropdown that is already filled in and whose list loads slowly when opened (12 s, longer than a
+               step waits for options), like a Site field in a reschedule dialog under load. -->
+          <span id="clinic-label" style="display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px">Clinic</span>
+          <div role="combobox" id="clinic" aria-labelledby="clinic-label" aria-controls="clinic-options" aria-expanded="false" tabindex="0">Skopje Centre</div>
+          <div role="listbox" id="clinic-options" aria-labelledby="clinic-label" hidden></div>
+        </div>
+        <div class="field">
+          <!-- A custom dropdown that starts empty and that the page fills in itself just after it is opened (1.5 s), while
+               its list takes 15 s, like a "Book a slot" dialog setting its default site. -->
+          <span id="room-label" style="display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px">Room</span>
+          <div role="combobox" id="room" aria-labelledby="room-label" aria-controls="room-options" aria-expanded="false" tabindex="0">Choose a room</div>
+          <div role="listbox" id="room-options" aria-labelledby="room-label" hidden></div>
+        </div>
+        <div class="field full">
+          <label for="reason">Reason for visit</label>
+          <textarea id="reason"></textarea>
+        </div>
+      </div>
+      <div class="toolbar" style="margin: 0">
+        <div class="spacer"></div>
+        <a href="worklist.html">Back to worklist</a>
+        <button type="submit">Register patient</button>
+      </div>
+    </form>
+  </main>
+  <script>
+    const user = requireRole('reception');
+    if (user) renderHeader(user, 'register.html');
+
+    const doctorSelect = document.getElementById('doctor');
+    DOCTORS.forEach((d) => doctorSelect.add(new Option(d, d)));
+
+    const clinic = document.getElementById('clinic');
+    const clinicOptions = document.getElementById('clinic-options');
+    clinic.addEventListener('click', () => {
+      clinic.setAttribute('aria-expanded', 'true');
+      clinicOptions.hidden = false;
+      setTimeout(() => {
+        clinicOptions.replaceChildren(...['Skopje Centre', 'Bitola'].map((name) => {
+          const o = document.createElement('div');
+          o.setAttribute('role', 'option');
+          o.textContent = name;
+          o.addEventListener('click', () => {
+            clinic.textContent = name;
+            clinic.setAttribute('aria-expanded', 'false');
+            clinicOptions.hidden = true;
+          });
+          return o;
+        }));
+      }, 12000);
+    });
+
+    const room = document.getElementById('room');
+    const roomOptions = document.getElementById('room-options');
+    room.addEventListener('click', () => {
+      room.setAttribute('aria-expanded', 'true');
+      roomOptions.hidden = false;
+      setTimeout(() => { room.textContent = 'Room 2'; }, 1500);
+      setTimeout(() => {
+        roomOptions.replaceChildren(...['Room 1', 'Room 2', 'Room 3'].map((name) => {
+          const o = document.createElement('div');
+          o.setAttribute('role', 'option');
+          o.textContent = name;
+          o.addEventListener('click', () => {
+            room.textContent = name;
+            room.setAttribute('aria-expanded', 'false');
+            roomOptions.hidden = true;
+          });
+          return o;
+        }));
+      }, 15000);
+    });
+
+    document.getElementById('register-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const values = {
+        'first-name': document.getElementById('first-name').value.trim(),
+        'last-name': document.getElementById('last-name').value.trim(),
+        dob: document.getElementById('dob').value,
+        doctor: doctorSelect.value,
+      };
+      let ok = true;
+      for (const [field, value] of Object.entries(values)) {
+        const missing = !value;
+        document.getElementById(`${field}-error`).hidden = !missing;
+        if (missing) ok = false;
+      }
+      document.getElementById('form-error').hidden = ok;
+      if (!ok) return;
+
+      const db = loadDb();
+      const patient = `${values['first-name']} ${values['last-name']}`;
+      db.appointments.push({ id: db.nextId++, time: 'Walk-in', patient, dob: values.dob, doctor: values.doctor, status: 'Scheduled' });
+      saveDb(db);
+      flash(`${patient} registered as a walk-in`);
+      location.href = 'worklist.html';
+    });
+  </script>
+</body>
+</html>

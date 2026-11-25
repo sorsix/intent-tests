@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clinic session – St. Luke Clinic</title>
+  <!-- A repeating clinic session whose occurrences show their status only as a background colour, like a clinic's
+       Future Events list: the open occurrence solid, the others faded with opacity, colours set inline (Angular
+       [ngStyle]), by a stylesheet class (SCSS) and by a CSS variable. Used by the colour checks (src/colour.ts,
+       pageColours in src/snapshot.ts). -->
+  <style>
+    :root { --draft: #c7c7c7; }
+    body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1c2430; background: #f4f6f8; }
+    main { max-width: 640px; margin: 24px auto; padding: 0 24px; }
+    .panel { background: #fff; border-radius: 8px; padding: 16px; }
+    .occurrence { display: block; width: 320px; margin: 6px 0; padding: 8px 12px; border: 0; border-radius: 4px; color: #fff; text-align: left; font: inherit; }
+    .occurrence .time { float: right; }
+    .not-selected { opacity: 0.55; }
+    .cancelled { background-color: #fe994a; }
+    .draft { background-color: var(--draft); }
+    .legend span { display: inline-block; padding: 2px 8px; border-radius: 10px; }
+    .conflict { background-color: rgba(234, 67, 53, 0.15); }
+    .save { background: #2967bc; color: #fff; border: 0; padding: 6px 14px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Morning clinic</h1>
+    <section class="panel">
+      <h2>Future Events</h2>
+      <button type="button" class="occurrence" style="background-color: rgb(34, 139, 34)">
+        <b>Friday, 6 November 2026</b><div>Test Clinic B <span class="time">07:30 - 12:00</span></div>
+      </button>
+      <button type="button" class="occurrence not-selected" style="background-color: #358856">
+        <b>Monday, 9 November 2026</b><div>Test Clinic B <span class="time">07:30 - 12:00</span></div>
+      </button>
+      <button type="button" class="occurrence not-selected cancelled">
+        <b>Tuesday, 10 November 2026</b><div>Test Clinic B <span class="time">07:30 - 12:00</span></div>
+      </button>
+      <!-- The colour is on the wrapper; the text is in transparent children. -->
+      <div class="occurrence not-selected draft">
+        <div><div><b>Wednesday, 11 November 2026</b></div><div>Test Clinic B <span class="time">07:30 - 12:00</span></div></div>
+      </div>
+      <button type="button" class="occurrence not-selected" style="background-color: #358856; display: none">
+        <b>Thursday, 12 November 2026</b><div>Test Clinic B <span class="time">07:30 - 12:00</span></div>
+      </button>
+    </section>
+    <p class="legend">Rooms: <span class="conflict">Room 4 double booked</span></p>
+    <button type="button" class="save">Save</button>
+  </main>
+</body>
+</html>
