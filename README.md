@@ -99,9 +99,9 @@ and compare its picks in the report before you rely on it.
 
 ## Contributing
 
-Issues and pull requests are welcome. Read [CONTRIBUTING.md](engine/CONTRIBUTING.md) first: contributions are under
-Apache 2.0 with a DCO sign-off. Report security issues privately, as described in [SECURITY.md](engine/SECURITY.md).
-This project follows a [code of conduct](engine/CODE_OF_CONDUCT.md).
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](.github/CONTRIBUTING.md) first: contributions are under
+Apache 2.0 with a DCO sign-off. Report security issues privately, as described in [SECURITY.md](.github/SECURITY.md).
+This project follows a [code of conduct](.github/CODE_OF_CONDUCT.md).
 
 ## License
 

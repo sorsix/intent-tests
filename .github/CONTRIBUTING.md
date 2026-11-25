@@ -1,4 +1,4 @@
-# Contributing to Intent Engine
+# Contributing to Intent Tests
 
 Thank you for helping. Bug reports, test-format ideas and pull requests are all welcome.
 
@@ -6,17 +6,18 @@ Thank you for helping. Bug reports, test-format ideas and pull requests are all 
 
 - **A bug:** open an issue with the step text, what the engine picked (the step's candidates and the model's answer
   from `report.html`, or a run with `AT_DEBUG=true`), and what you expected. A minimal page that reproduces it, like the
-  ones in `test/fixture/site/`, makes a fix much faster.
+  ones in `engine/test/fixture/site/`, makes a fix much faster.
 - **A new step verb, modifier or setting:** open an issue first. The test format is a contract with every suite that
   uses it, so changes are discussed before they are built.
-- Read [AGENTS.md](AGENTS.md): it lists the rules the engine keeps (fail rather than guess, a deterministic parser,
+- Read [engine/AGENTS.md](../engine/AGENTS.md): it lists the rules the engine keeps (fail rather than guess, a deterministic parser,
   settings precedence) and where each kind of change lives. It is written for AI agents and people alike.
 
 ## Development
 
-Node 22.18 or newer.
+Node 22.18 or newer. The engine's commands run in its folder:
 
 ```bash
+cd engine
 npm install
 npx playwright install chromium
 npm run typecheck
@@ -26,12 +27,12 @@ npm run format
 ```
 
 Pull requests need all of these passing. Add or update a unit test for the behaviour you change, and a case in
-`test/fixture/self-test/engine.md` when the stub decider can exercise it. Every new or changed command, flag,
-environment variable or config key also goes into `docs/reference.json` (a test checks it) and the README.
+`engine/test/fixture/self-test/engine.md` when the stub decider can exercise it. Every new or changed command, flag,
+environment variable or config key also goes into `engine/docs/reference.json` (a test checks it) and the engine's README.
 
 ## Developer Certificate of Origin
 
-Contributions are accepted under the project's [Apache 2.0 license](LICENSE). Sign off every commit to certify the
+Contributions are accepted under the project's [Apache 2.0 license](../LICENSE). Sign off every commit to certify the
 [Developer Certificate of Origin](https://developercertificate.org/):
 
 ```bash
