@@ -1,5 +1,8 @@
 # Intent Tests
 
+[![CI](https://github.com/sorsix/intent-tests/actions/workflows/ci.yml/badge.svg)](https://github.com/sorsix/intent-tests/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 **UI tests written the way a person would describe them, run in a real browser.**
 
 ```markdown
